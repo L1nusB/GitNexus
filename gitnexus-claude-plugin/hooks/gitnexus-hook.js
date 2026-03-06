@@ -85,28 +85,31 @@ function extractPattern(toolName, toolInput) {
 
 /**
  * Spawn a gitnexus CLI command synchronously.
- * Tries direct binary first, falls back to npx.
+ * Chooses launcher once (direct binary or npx), then runs exactly once.
  */
 function runGitNexusCli(args, cwd, timeout) {
   const isWin = process.platform === 'win32';
 
-  // Try direct gitnexus binary first (faster if globally installed)
+  // Detect whether 'gitnexus' is on PATH (cheap check, no execution)
+  let useDirectBinary = false;
   try {
-    const child = spawnSync(
-      'gitnexus',
-      args,
-      { encoding: 'utf-8', timeout, cwd, stdio: ['pipe', 'pipe', 'pipe'], shell: isWin }
+    const which = spawnSync(
+      isWin ? 'where' : 'which', ['gitnexus'],
+      { encoding: 'utf-8', timeout: 3000, stdio: ['pipe', 'pipe', 'pipe'] }
     );
-    if (child.status === 0) return child;
+    useDirectBinary = which.status === 0;
   } catch { /* not on PATH */ }
 
-  // Fallback to npx
-  const child = spawnSync(
-    'npx',
-    ['-y', 'gitnexus', ...args],
+  if (useDirectBinary) {
+    return spawnSync(
+      'gitnexus', args,
+      { encoding: 'utf-8', timeout, cwd, stdio: ['pipe', 'pipe', 'pipe'], shell: isWin }
+    );
+  }
+  return spawnSync(
+    'npx', ['-y', 'gitnexus', ...args],
     { encoding: 'utf-8', timeout: timeout + 5000, cwd, stdio: ['pipe', 'pipe', 'pipe'], shell: isWin }
   );
-  return child;
 }
 
 /**
@@ -142,7 +145,9 @@ function handlePreToolUse(input) {
   let result = '';
   try {
     const child = runGitNexusCli(['augment', '--', pattern], cwd, 8000);
-    result = child.stderr || '';
+    if (!child.error && child.status === 0) {
+      result = child.stderr || '';
+    }
   } catch { /* graceful failure */ }
 
   if (result && result.trim()) {

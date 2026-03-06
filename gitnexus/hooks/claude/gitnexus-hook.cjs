@@ -140,7 +140,9 @@ function handlePreToolUse(input) {
   let result = '';
   try {
     const child = runGitNexusCli(cliPath, ['augment', '--', pattern], cwd, 8000);
-    result = child.stderr || '';
+    if (!child.error && child.status === 0) {
+      result = child.stderr || '';
+    }
   } catch { /* graceful failure */ }
 
   if (result && result.trim()) {
