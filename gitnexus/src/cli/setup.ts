@@ -203,8 +203,25 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
       });
     }
 
+    // Add PostToolUse hook for auto-reindex after git commit
+    if (!existing.hooks.PostToolUse) existing.hooks.PostToolUse = [];
+    const hasPostToolHook = existing.hooks.PostToolUse.some(
+      (h: any) => h.hooks?.some((hh: any) => hh.command?.includes('gitnexus'))
+    );
+    if (!hasPostToolHook) {
+      existing.hooks.PostToolUse.push({
+        matcher: 'Bash',
+        hooks: [{
+          type: 'command',
+          command: hookCmd,
+          timeout: 120000,
+          statusMessage: 'Updating GitNexus index...',
+        }],
+      });
+    }
+
     await writeJsonFile(settingsPath, existing);
-    result.configured.push('Claude Code hooks (PreToolUse)');
+    result.configured.push('Claude Code hooks (PreToolUse, PostToolUse)');
   } catch (err: any) {
     result.errors.push(`Claude Code hooks: ${err.message}`);
   }
