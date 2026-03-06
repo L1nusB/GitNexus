@@ -112,8 +112,6 @@ Before completing any code modification task, verify:
 ## CLI
 
 - Re-index: \`npx gitnexus analyze\`
-- Scope control: add \`.gitnexusignore\` (glob patterns, supports \`!\` negation)
-- Bypass user ignore file: \`npx gitnexus analyze --no-user-ignore\`
 - Check freshness: \`npx gitnexus status\`
 - Generate docs: \`npx gitnexus wiki\`
 
@@ -277,3 +275,4 @@ export async function generateAIContextFiles(
 
   return { files: createdFiles };
 }
+
