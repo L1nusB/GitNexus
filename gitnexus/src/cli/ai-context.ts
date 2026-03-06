@@ -114,7 +114,7 @@ Before completing any code modification task, verify:
 After committing code changes, the GitNexus index becomes stale. Re-run analyze to update it:
 
 \`\`\`bash
-npx gitnexus analyze${' '}
+npx gitnexus analyze
 \`\`\`
 
 If the index previously included embeddings, preserve them by adding \`--embeddings\`:

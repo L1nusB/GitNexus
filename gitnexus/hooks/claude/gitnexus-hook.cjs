@@ -11,7 +11,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
 
 /**
  * Read JSON input from stdin synchronously.
@@ -203,7 +202,6 @@ function handlePostToolUse(input) {
 
   try {
     const child = runGitNexusCli(cliPath, args, cwd, 120000);
-    const output = (child.stderr || '').trim();
     const success = child.status === 0;
 
     console.log(JSON.stringify({

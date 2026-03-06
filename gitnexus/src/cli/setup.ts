@@ -197,7 +197,7 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
         hooks: [{
           type: 'command',
           command: hookCmd,
-          timeout: 8000,
+          timeout: 8,
           statusMessage: 'Enriching with GitNexus graph context...',
         }],
       });
@@ -214,7 +214,7 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
         hooks: [{
           type: 'command',
           command: hookCmd,
-          timeout: 120000,
+          timeout: 120,
           statusMessage: 'Updating GitNexus index...',
         }],
       });
