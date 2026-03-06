@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { parseUserIgnoreRules, shouldIgnorePath, shouldIgnorePathByUserRules } from '../../src/config/ignore-service.js';
+import { describe, it, expect, vi } from 'vitest';
+import fs from 'fs/promises';
+import { loadUserIgnoreRules, parseUserIgnoreRules, shouldIgnorePath, shouldIgnorePathByUserRules } from '../../src/config/ignore-service.js';
 
 describe('shouldIgnorePath', () => {
   describe('version control directories', () => {
@@ -165,5 +166,30 @@ data/
 
     expect(shouldIgnorePathByUserRules('root-only/file.txt', rules)).toBe(true);
     expect(shouldIgnorePathByUserRules('nested/root-only/file.txt', rules)).toBe(false);
+  });
+
+  it('treats bare patterns as matching both the target and descendants', () => {
+    const rules = parseUserIgnoreRules('data');
+
+    expect(shouldIgnorePathByUserRules('data', rules)).toBe(true);
+    expect(shouldIgnorePathByUserRules('data/sample.json', rules)).toBe(true);
+    expect(shouldIgnorePathByUserRules('nested/data/sample.json', rules)).toBe(true);
+  });
+});
+
+describe('loadUserIgnoreRules', () => {
+  it('returns empty rules when ignore file does not exist', async () => {
+    const rules = await loadUserIgnoreRules('/definitely/does-not-exist');
+    expect(rules).toEqual([]);
+  });
+
+  it('rethrows non-missing file system errors', async () => {
+    const readFileSpy = vi.spyOn(fs, 'readFile').mockRejectedValueOnce(
+      Object.assign(new Error('permission denied'), { code: 'EACCES' }),
+    );
+
+    await expect(loadUserIgnoreRules('/tmp/repo')).rejects.toThrow('permission denied');
+
+    readFileSpy.mockRestore();
   });
 });

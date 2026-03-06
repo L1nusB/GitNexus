@@ -215,14 +215,28 @@ const parseUserIgnoreRule = (line: string): UserIgnoreRule | null => {
   pattern = normalizeGlobPath(pattern.replace(/^\/+/, ''));
   if (!pattern) return null;
 
+  const patterns = new Set<string>();
+  const addPattern = (candidate: string) => {
+    if (!candidate) return;
+    patterns.add(candidate);
+    if (!anchored && !candidate.startsWith('**/')) {
+      patterns.add(`**/${candidate}`);
+    }
+  };
+
   if (pattern.endsWith('/')) {
     const base = pattern.replace(/\/+$/, '');
-    pattern = `${base}/**`;
-  }
+    if (!base) return null;
+    addPattern(base);
+    addPattern(`${base}/**`);
+  } else {
+    addPattern(pattern);
 
-  const patterns = new Set<string>([pattern]);
-  if (!anchored && !pattern.startsWith('**/')) {
-    patterns.add(`**/${pattern}`);
+    // For non-glob patterns, also match directory descendants.
+    const hasGlobMagic = /[*?[\]{}()!+@]/.test(pattern);
+    if (!hasGlobMagic) {
+      addPattern(`${pattern}/**`);
+    }
   }
 
   return {
@@ -248,8 +262,12 @@ export const loadUserIgnoreRules = async (
   try {
     const content = await fs.readFile(filePath, 'utf-8');
     return parseUserIgnoreRules(content);
-  } catch {
-    return [];
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException | undefined)?.code;
+    if (code === 'ENOENT' || code === 'ENOTDIR') {
+      return [];
+    }
+    throw error;
   }
 };
 
