@@ -11,6 +11,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 /**
  * Read JSON input from stdin synchronously.
@@ -25,19 +26,19 @@ function readInput() {
 }
 
 /**
- * Check if a directory (or ancestor) has a .gitnexus index.
+ * Find the .gitnexus directory by walking up from startDir.
+ * Returns the path to .gitnexus/ or null if not found.
  */
-function findGitNexusIndex(startDir) {
+function findGitNexusDir(startDir) {
   let dir = startDir || process.cwd();
   for (let i = 0; i < 5; i++) {
-    if (fs.existsSync(path.join(dir, '.gitnexus'))) {
-      return true;
-    }
+    const candidate = path.join(dir, '.gitnexus');
+    if (fs.existsSync(candidate)) return candidate;
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  return false;
+  return null;
 }
 
 /**
@@ -105,23 +106,19 @@ function resolveCliPath() {
  * Returns the stderr output (KuzuDB captures stdout at OS level).
  */
 function runGitNexusCli(cliPath, args, cwd, timeout) {
-  const { spawnSync } = require('child_process');
-  let child;
+  const isWin = process.platform === 'win32';
   if (cliPath) {
-    child = spawnSync(
+    return spawnSync(
       process.execPath,
       [cliPath, ...args],
       { encoding: 'utf-8', timeout, cwd, stdio: ['pipe', 'pipe', 'pipe'] }
     );
-  } else {
-    const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-    child = spawnSync(
-      cmd,
-      ['-y', 'gitnexus', ...args],
-      { encoding: 'utf-8', timeout: timeout + 5000, cwd, stdio: ['pipe', 'pipe', 'pipe'] }
-    );
   }
-  return child;
+  return spawnSync(
+    'npx',
+    ['-y', 'gitnexus', ...args],
+    { encoding: 'utf-8', timeout: timeout + 5000, cwd, stdio: ['pipe', 'pipe', 'pipe'], shell: isWin }
+  );
 }
 
 /**
@@ -129,7 +126,7 @@ function runGitNexusCli(cliPath, args, cwd, timeout) {
  */
 function handlePreToolUse(input) {
   const cwd = input.cwd || process.cwd();
-  if (!findGitNexusIndex(cwd)) return;
+  if (!findGitNexusDir(cwd)) return;
 
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
@@ -173,20 +170,7 @@ function handlePostToolUse(input) {
   if (toolOutput.exit_code !== undefined && toolOutput.exit_code !== 0) return;
 
   const cwd = input.cwd || process.cwd();
-
-  // Find .gitnexus directory
-  let dir = cwd;
-  let gitNexusDir = '';
-  for (let i = 0; i < 5; i++) {
-    const candidate = path.join(dir, '.gitnexus');
-    if (fs.existsSync(candidate)) {
-      gitNexusDir = candidate;
-      break;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
+  const gitNexusDir = findGitNexusDir(cwd);
   if (!gitNexusDir) return;
 
   // Read meta.json to detect previous embeddings
