@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { shouldIgnorePath } from '../../src/config/ignore-service.js';
+import { parseUserIgnoreRules, shouldIgnorePath, shouldIgnorePathByUserRules } from '../../src/config/ignore-service.js';
 
 describe('shouldIgnorePath', () => {
   describe('version control directories', () => {
@@ -133,5 +133,37 @@ describe('shouldIgnorePath', () => {
     ])('does not ignore source file %s', (filePath) => {
       expect(shouldIgnorePath(filePath)).toBe(false);
     });
+  });
+});
+
+describe('user ignore rules', () => {
+  it('supports comments, blank lines, directory patterns and glob patterns', () => {
+    const rules = parseUserIgnoreRules(`
+# comment
+data/
+**/*.json
+`);
+
+    expect(shouldIgnorePathByUserRules('data/sample.txt', rules)).toBe(true);
+    expect(shouldIgnorePathByUserRules('nested/data/sample.txt', rules)).toBe(true);
+    expect(shouldIgnorePathByUserRules('src/config.json', rules)).toBe(true);
+    expect(shouldIgnorePathByUserRules('src/index.ts', rules)).toBe(false);
+  });
+
+  it('supports negation rules', () => {
+    const rules = parseUserIgnoreRules(`
+**/*.json
+!src/keep.json
+`);
+
+    expect(shouldIgnorePathByUserRules('src/skip.json', rules)).toBe(true);
+    expect(shouldIgnorePathByUserRules('src/keep.json', rules)).toBe(false);
+  });
+
+  it('supports root anchored rules with leading slash', () => {
+    const rules = parseUserIgnoreRules('/root-only/**');
+
+    expect(shouldIgnorePathByUserRules('root-only/file.txt', rules)).toBe(true);
+    expect(shouldIgnorePathByUserRules('nested/root-only/file.txt', rules)).toBe(false);
   });
 });
