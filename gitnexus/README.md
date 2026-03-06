@@ -139,7 +139,8 @@ Your AI agent gets these tools automatically:
 gitnexus setup                    # Configure MCP for your editors (one-time)
 gitnexus analyze [path]           # Index a repository (or update stale index)
 gitnexus analyze --force          # Force full re-index
-gitnexus analyze --skip-embeddings  # Skip embedding generation (faster)
+gitnexus analyze --embeddings     # Enable embedding generation
+gitnexus analyze --no-user-ignore # Ignore .gitnexusignore and use built-in ignore rules only
 gitnexus mcp                     # Start MCP server (stdio) — serves all indexed repos
 gitnexus serve                   # Start local HTTP server (multi-repo) for web UI
 gitnexus list                    # List all indexed repositories
@@ -153,6 +154,30 @@ gitnexus wiki --model <model>    # Wiki with custom LLM model (default: gpt-4o-m
 ## Multi-Repo Support
 
 GitNexus supports indexing multiple repositories. Each `gitnexus analyze` registers the repo in a global registry (`~/.gitnexus/registry.json`). The MCP server serves all indexed repos automatically.
+
+## Index Scope Control (`.gitnexusignore`)
+
+By default, `gitnexus analyze` applies:
+
+1. Built-in ignore rules (for example `node_modules`, build artifacts, binary formats)
+2. Your repo's optional `.gitnexusignore` file (if present)
+
+Use `.gitnexusignore` to exclude non-core paths from indexing without changing GitNexus defaults.
+
+Example:
+
+```gitignore
+data/
+exports/
+**/*.json
+!src/config/critical-schema.json
+```
+
+To bypass `.gitnexusignore` and index using built-in rules only:
+
+```bash
+gitnexus analyze --no-user-ignore
+```
 
 ## Supported Languages
 

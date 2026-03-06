@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **gitnexus** (792 symbols, 2189 relationships, 61 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **gitnexus** (804 symbols, 2213 relationships, 62 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -72,6 +72,8 @@ Before completing any code modification task, verify:
 ## CLI
 
 - Re-index: `npx gitnexus analyze`
+- Scope control: add `.gitnexusignore` (glob patterns, supports `!` negation)
+- Bypass user ignore file: `npx gitnexus analyze --no-user-ignore`
 - Check freshness: `npx gitnexus status`
 - Generate docs: `npx gitnexus wiki`
 
