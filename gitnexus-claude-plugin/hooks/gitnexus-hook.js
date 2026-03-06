@@ -155,6 +155,15 @@ function handlePreToolUse(input) {
   }
 }
 
+function emitPostToolContext(message) {
+  console.log(JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: 'PostToolUse',
+      additionalContext: message
+    }
+  }));
+}
+
 /**
  * PostToolUse handler — auto-reindex after git commit.
  */
@@ -163,7 +172,7 @@ function handlePostToolUse(input) {
   if (toolName !== 'Bash') return;
 
   const command = (input.tool_input || {}).command || '';
-  if (!/\bgit\s+(commit|merge)\b/.test(command)) return;
+  if (!/\bgit\s+(commit|merge)(\s|$)/.test(command)) return;
 
   const toolOutput = input.tool_output || {};
   if (toolOutput.exit_code !== undefined && toolOutput.exit_code !== 0) return;
@@ -182,25 +191,19 @@ function handlePostToolUse(input) {
   const args = ['analyze'];
   if (hadEmbeddings) args.push('--embeddings');
 
-  try {
-    const child = runGitNexusCli(args, cwd, 120000);
-    const success = child.status === 0;
+  const analyzeCmd = `npx gitnexus analyze${hadEmbeddings ? ' --embeddings' : ''}`;
+  const child = runGitNexusCli(args, cwd, 120000);
 
-    console.log(JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: 'PostToolUse',
-        additionalContext: success
-          ? `GitNexus index updated after commit.${hadEmbeddings ? ' Embeddings regenerated.' : ''}`
-          : `GitNexus auto-reindex failed (exit ${child.status}). Run \`npx gitnexus analyze\` manually.`
-      }
-    }));
-  } catch {
-    console.log(JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: 'PostToolUse',
-        additionalContext: 'GitNexus auto-reindex timed out. Run `npx gitnexus analyze` manually if needed.'
-      }
-    }));
+  if (child.error) {
+    const reason = child.signal ? 'timed out' : child.error.code || 'failed';
+    emitPostToolContext(`GitNexus auto-reindex ${reason}. Run \`${analyzeCmd}\` manually.`);
+    return;
+  }
+
+  if (child.status === 0) {
+    emitPostToolContext(`GitNexus index updated after commit.${hadEmbeddings ? ' Embeddings regenerated.' : ''}`);
+  } else {
+    emitPostToolContext(`GitNexus auto-reindex failed (exit ${child.status}). Run \`${analyzeCmd}\` manually.`);
   }
 }
 
