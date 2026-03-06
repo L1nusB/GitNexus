@@ -111,7 +111,7 @@ function main() {
     try {
       const child = spawnSync(
         'gitnexus',
-        ['augment', pattern],
+        ['augment', '--', pattern],
         { encoding: 'utf-8', timeout: 8000, cwd, stdio: ['pipe', 'pipe', 'pipe'], shell: isWin }
       );
       if (child.status === 0 && child.stderr && child.stderr.trim()) {
@@ -124,7 +124,7 @@ function main() {
       try {
         const child = spawnSync(
           'npx',
-          ['-y', 'gitnexus', 'augment', pattern],
+          ['-y', 'gitnexus', 'augment', '--', pattern],
           { encoding: 'utf-8', timeout: 15000, cwd, stdio: ['pipe', 'pipe', 'pipe'], shell: isWin }
         );
         if (child.status === 0 && child.stderr && child.stderr.trim()) {

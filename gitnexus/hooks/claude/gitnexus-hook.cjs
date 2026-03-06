@@ -123,7 +123,7 @@ function main() {
       if (cliPath) {
         child = spawnSync(
           process.execPath,
-          [cliPath, 'augment', pattern],
+          [cliPath, 'augment', '--', pattern],
           { encoding: 'utf-8', timeout: 8000, cwd, stdio: ['pipe', 'pipe', 'pipe'] }
         );
       } else {
@@ -131,7 +131,7 @@ function main() {
         const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
         child = spawnSync(
           cmd,
-          ['-y', 'gitnexus', 'augment', pattern],
+          ['-y', 'gitnexus', 'augment', '--', pattern],
           { encoding: 'utf-8', timeout: 15000, cwd, stdio: ['pipe', 'pipe', 'pipe'] }
         );
       }
