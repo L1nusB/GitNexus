@@ -2,7 +2,24 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { fileURLToPath } from 'url';
 import { installSkillsTo, SKILL_NAMES, setupCommand } from '../../src/cli/setup.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+/** Resolve the real skills source directory used by setup.ts */
+const SKILLS_ROOT = path.join(__dirname, '..', '..', 'skills');
+
+/**
+ * Dynamically import discoverSkillNames from setup.ts.
+ * Returns null if the export doesn't exist yet (pre-implementation).
+ */
+async function getDiscoverSkillNames(): Promise<((skillsRoot: string) => Promise<string[]>) | null> {
+  const mod = await import('../../src/cli/setup.js');
+  const candidate = (mod as any).discoverSkillNames;
+  return typeof candidate === 'function' ? candidate : null;
+}
 
 describe('installSkillsTo', () => {
   let tmpDir: string;
@@ -206,5 +223,90 @@ describe('setupCommand — project-local skill cleanup', () => {
     await setupCommand();
 
     await expect(fs.stat(localSkillsDir)).rejects.toThrow();
+  });
+});
+
+describe('discoverSkillNames', () => {
+  let tmpDir: string;
+  let discoverSkillNames: ((skillsRoot: string) => Promise<string[]>) | null;
+
+  beforeEach(async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-discover-skills-'));
+    discoverSkillNames = await getDiscoverSkillNames();
+  });
+
+  afterEach(async () => {
+    try {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    } catch { /* best-effort */ }
+  });
+
+  it('is exported from setup.ts', () => {
+    expect(discoverSkillNames, 'setup.ts must export discoverSkillNames()').not.toBeNull();
+  });
+
+  it('discovers all skills from the real source directory', async () => {
+    if (!discoverSkillNames) return expect.fail('discoverSkillNames not exported');
+    const names = await discoverSkillNames(SKILLS_ROOT);
+    expect(names.length).toBeGreaterThanOrEqual(7);
+    expect(names).toContain('gitnexus-pr-review');
+    expect(names).toContain('gitnexus-exploring');
+    expect(names).toContain('gitnexus-cli');
+  });
+
+  it('only includes gitnexus-* prefixed entries', async () => {
+    if (!discoverSkillNames) return expect.fail('discoverSkillNames not exported');
+    // Create a mix of valid and invalid entries
+    await fs.writeFile(path.join(tmpDir, 'gitnexus-foo.md'), 'skill content');
+    await fs.writeFile(path.join(tmpDir, 'README.md'), 'not a skill');
+    await fs.writeFile(path.join(tmpDir, 'notes.txt'), 'not a skill');
+
+    const names = await discoverSkillNames(tmpDir);
+    expect(names).toEqual(['gitnexus-foo']);
+  });
+
+  it('discovers flat .md files', async () => {
+    if (!discoverSkillNames) return expect.fail('discoverSkillNames not exported');
+    await fs.writeFile(path.join(tmpDir, 'gitnexus-test.md'), 'skill content');
+
+    const names = await discoverSkillNames(tmpDir);
+    expect(names).toEqual(['gitnexus-test']);
+  });
+
+  it('discovers directory-based skills', async () => {
+    if (!discoverSkillNames) return expect.fail('discoverSkillNames not exported');
+    const skillDir = path.join(tmpDir, 'gitnexus-test');
+    await fs.mkdir(skillDir, { recursive: true });
+    await fs.writeFile(path.join(skillDir, 'SKILL.md'), 'skill content');
+
+    const names = await discoverSkillNames(tmpDir);
+    expect(names).toEqual(['gitnexus-test']);
+  });
+
+  it('handles mixed layouts (flat + directory)', async () => {
+    if (!discoverSkillNames) return expect.fail('discoverSkillNames not exported');
+    await fs.writeFile(path.join(tmpDir, 'gitnexus-a.md'), 'flat skill');
+    const dirSkill = path.join(tmpDir, 'gitnexus-b');
+    await fs.mkdir(dirSkill, { recursive: true });
+    await fs.writeFile(path.join(dirSkill, 'SKILL.md'), 'dir skill');
+
+    const names = await discoverSkillNames(tmpDir);
+    expect(names.sort()).toEqual(['gitnexus-a', 'gitnexus-b']);
+  });
+
+  it('returns empty array for empty directory', async () => {
+    if (!discoverSkillNames) return expect.fail('discoverSkillNames not exported');
+    const names = await discoverSkillNames(tmpDir);
+    expect(names).toEqual([]);
+  });
+
+  it('ignores directories without SKILL.md', async () => {
+    if (!discoverSkillNames) return expect.fail('discoverSkillNames not exported');
+    const brokenSkill = path.join(tmpDir, 'gitnexus-broken');
+    await fs.mkdir(brokenSkill, { recursive: true });
+    await fs.writeFile(path.join(brokenSkill, 'README.md'), 'not a skill');
+
+    const names = await discoverSkillNames(tmpDir);
+    expect(names).toEqual([]);
   });
 });
