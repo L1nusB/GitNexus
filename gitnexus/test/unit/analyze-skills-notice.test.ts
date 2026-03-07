@@ -4,35 +4,19 @@ import path from 'path';
 import os from 'os';
 
 /**
- * Tests for the deprecation notice in analyze when stale project-local skills exist.
- *
- * After the refactor, `analyze` no longer installs skills but should warn
- * if it detects a leftover `.claude/skills/gitnexus/` directory from a prior run.
- *
- * The notice logic will be extracted as a small helper from analyze.ts (or ai-context.ts)
- * so we can test it without running the full analyze pipeline.
+ * Contract tests for analyze stale-skills notice.
+ * These are intentionally active pre-refactor acceptance tests:
+ * they should fail until analyze exports and uses checkStaleProjectSkills().
  */
 
-// Placeholder for the function that will be extracted during refactor.
-// For now we define the expected interface and test against it.
-// Once implemented, update the import to point to the real function.
-
-/**
- * Check for stale project-local skills and print a deprecation notice.
- * Returns true if stale skills were detected.
- */
-async function checkStaleProjectSkills(repoPath: string): Promise<boolean> {
-  const skillsDir = path.join(repoPath, '.claude', 'skills', 'gitnexus');
-  try {
-    const stat = await fs.stat(skillsDir);
-    if (stat.isDirectory()) {
-      console.log(`  Note: Skills are no longer installed by analyze. Run 'gitnexus setup' to manage skills globally.`);
-      return true;
-    }
-  } catch {
-    // Directory doesn't exist — nothing to warn about
-  }
-  return false;
+async function getCheckStaleProjectSkills(): Promise<(repoPath: string) => Promise<boolean>> {
+  const analyzeModule = await import('../../src/cli/analyze.js');
+  const candidate = (analyzeModule as any).checkStaleProjectSkills;
+  expect(
+    typeof candidate,
+    'analyze.ts must export checkStaleProjectSkills(repoPath) for unit testing',
+  ).toBe('function');
+  return candidate as (repoPath: string) => Promise<boolean>;
 }
 
 describe('analyze — stale project-local skills notice', () => {
@@ -60,6 +44,7 @@ describe('analyze — stale project-local skills notice', () => {
     await fs.mkdir(skillSubDir, { recursive: true });
     await fs.writeFile(path.join(skillSubDir, 'SKILL.md'), 'stale');
 
+    const checkStaleProjectSkills = await getCheckStaleProjectSkills();
     const detected = await checkStaleProjectSkills(tmpDir);
 
     expect(detected).toBe(true);
@@ -68,6 +53,7 @@ describe('analyze — stale project-local skills notice', () => {
   });
 
   it('prints no notice when .claude/skills/gitnexus/ does not exist', async () => {
+    const checkStaleProjectSkills = await getCheckStaleProjectSkills();
     const detected = await checkStaleProjectSkills(tmpDir);
 
     expect(detected).toBe(false);
@@ -79,6 +65,7 @@ describe('analyze — stale project-local skills notice', () => {
     const skillsDir = path.join(tmpDir, '.claude', 'skills', 'gitnexus');
     await fs.mkdir(skillsDir, { recursive: true });
 
+    const checkStaleProjectSkills = await getCheckStaleProjectSkills();
     await checkStaleProjectSkills(tmpDir);
 
     // Directory must still exist
@@ -90,6 +77,7 @@ describe('analyze — stale project-local skills notice', () => {
     // .claude exists but no skills subdirectory
     await fs.mkdir(path.join(tmpDir, '.claude'), { recursive: true });
 
+    const checkStaleProjectSkills = await getCheckStaleProjectSkills();
     const detected = await checkStaleProjectSkills(tmpDir);
     expect(detected).toBe(false);
   });

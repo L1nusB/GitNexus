@@ -95,9 +95,10 @@ Since `analyzeCommand` is heavy (requires KuzuDB, pipeline, etc.), we don't test
 
 These tests can be written and run **before** the actual refactor. Here's the strategy:
 
-- **Tests that verify NEW behavior** (#1, #2, #15-17): Write them now, expect them to **fail**. They become the acceptance criteria — when they pass, the refactor is correct.
+- **Tests that verify NEW behavior** (#1, #2, #11, #12, #15-17, #19, #20): Keep them active and expect them to **fail** until implementation lands. They are the acceptance criteria.
 - **Tests that verify EXISTING behavior we're keeping** (#3-6, #18): Write them now, expect them to **pass** both before and after the refactor. They're regression guards.
-- **Tests for setup skills** (#7-14, #19-21): These test `installSkillsTo` which already exists in `setup.ts`. They can pass now if we export the function. They verify the setup path works correctly regardless of the refactor.
+- **Tests for setup skills** (#7-10): These test `installSkillsTo` directly and should pass now.
+- **Deferred edge case** (#21): Keep as planned while cleanup implementation is pending.
 
 ## Execution
 
@@ -109,3 +110,22 @@ npx vitest run test/unit/ai-context.test.ts test/unit/setup-skills.test.ts test/
 # Run all unit tests (verify no regressions)
 npm test
 ```
+
+## Changelog
+
+### 2026-03-07 — Pre-refactor test hardening
+
+- Switched acceptance checks from placeholder `it.todo(...)` to active tests for:
+  - `generateAIContextFiles` no longer installing skills (#1, #2)
+  - `setupCommand` migration cleanup behavior (#11, #12, #19, #20)
+- Reworked `analyze` notice tests to target production-code contract instead of a local test-only helper:
+  - Tests now require `analyze.ts` to export `checkStaleProjectSkills(repoPath)` and validate behavior through that symbol (#15-#17).
+  - This removes false confidence where tests could pass without any production integration.
+- Strengthened weak-path assertions:
+  - `ai-context` tests now use per-test temp directories (`beforeEach`/`afterEach`) to remove shared state leakage.
+  - Replaced the permissive "installs skills files" try/catch test with strict assertions.
+  - `installSkillsTo` missing-source test now simulates one missing skill via mocked `fs.readFile` and verifies partial install outcome (#10).
+- Intentional status in this phase:
+  - Acceptance tests are expected to fail until refactor implementation lands.
+  - Regression/behavior-preservation tests should continue to pass.
+  - Read-only cleanup scenario (#21) remains planned and should be finalized when cleanup implementation exists.

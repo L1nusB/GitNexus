@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach, afterAll, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { installSkillsTo, SKILL_NAMES } from '../../src/cli/setup.js';
+import { installSkillsTo, SKILL_NAMES, setupCommand } from '../../src/cli/setup.js';
 
 describe('installSkillsTo', () => {
   let tmpDir: string;
@@ -56,13 +56,28 @@ describe('installSkillsTo', () => {
   });
 
   it('handles missing source skill gracefully', async () => {
-    // installSkillsTo reads from the package skills/ directory.
-    // If a skill source file doesn't exist, it silently skips.
-    // We can't easily mock the filesystem here, but we can verify
-    // that the function doesn't throw even when called normally.
+    const missingSkill = SKILL_NAMES[SKILL_NAMES.length - 1];
+    const originalReadFile = fs.readFile.bind(fs);
+    const readFileSpy = vi.spyOn(fs, 'readFile').mockImplementation(async (...args: any[]) => {
+      const filePath = String(args[0]);
+      if (filePath.endsWith(`${missingSkill}.md`)) {
+        const err = new Error('ENOENT');
+        (err as NodeJS.ErrnoException).code = 'ENOENT';
+        throw err;
+      }
+      return originalReadFile(...args as any);
+    });
+
     const installed = await installSkillsTo(tmpDir);
-    // At minimum, should not throw and should return an array
-    expect(Array.isArray(installed)).toBe(true);
+    readFileSpy.mockRestore();
+
+    expect(installed).toHaveLength(SKILL_NAMES.length - 1);
+    expect(installed).not.toContain(missingSkill);
+    for (const name of SKILL_NAMES.filter(n => n !== missingSkill)) {
+      const skillFile = path.join(tmpDir, name, 'SKILL.md');
+      const stat = await fs.stat(skillFile);
+      expect(stat.isFile()).toBe(true);
+    }
   });
 });
 
@@ -77,6 +92,9 @@ describe('setupCommand — project-local skill cleanup', () => {
     tmpRepo = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-setup-repo-'));
     originalCwd = process.cwd();
     consoleOutput = [];
+    process.chdir(tmpRepo);
+
+    vi.spyOn(os, 'homedir').mockReturnValue(tmpHome);
 
     // Capture console.log output
     vi.spyOn(console, 'log').mockImplementation((...args: any[]) => {
@@ -96,33 +114,71 @@ describe('setupCommand — project-local skill cleanup', () => {
     } catch { /* best-effort */ }
   });
 
-  // These tests document expected POST-REFACTOR behavior.
-  // They will FAIL until the refactor is implemented, serving as acceptance criteria.
+  it('removes project-local skills when installing globally', async () => {
+    await fs.mkdir(path.join(tmpHome, '.claude'), { recursive: true });
+    await fs.mkdir(path.join(tmpRepo, '.git'), { recursive: true });
+    const localSkillsDir = path.join(tmpRepo, '.claude', 'skills', 'gitnexus');
+    await fs.mkdir(path.join(localSkillsDir, 'gitnexus-exploring'), { recursive: true });
+    await fs.writeFile(path.join(localSkillsDir, 'gitnexus-exploring', 'SKILL.md'), 'legacy skill');
 
-  it.todo('removes project-local skills when installing globally');
-  // Setup: create <tmpRepo>/.claude/skills/gitnexus/ with skill files
-  // Mock process.cwd() to tmpRepo, os.homedir() to tmpHome
-  // Run setupCommand
-  // Assert: <tmpRepo>/.claude/skills/gitnexus/ no longer exists
+    await setupCommand();
 
-  it.todo('prints notice when removing project-local skills');
-  // Same setup as above
-  // Assert: consoleOutput contains migration notice
+    await expect(fs.stat(localSkillsDir)).rejects.toThrow();
+  });
 
-  it.todo('does nothing when no project-local skills exist');
-  // Mock cwd to tmpRepo (no .claude/skills/gitnexus/)
-  // Run setupCommand
-  // Assert: no errors, no removal-related output
+  it('prints notice when removing project-local skills', async () => {
+    await fs.mkdir(path.join(tmpHome, '.claude'), { recursive: true });
+    await fs.mkdir(path.join(tmpRepo, '.git'), { recursive: true });
+    const localSkillsDir = path.join(tmpRepo, '.claude', 'skills', 'gitnexus');
+    await fs.mkdir(localSkillsDir, { recursive: true });
 
-  it.todo('does not remove project-local skills if not in a git repo');
-  // Create .claude/skills/gitnexus/ but no .git directory
-  // Assert: skills directory left intact
+    await setupCommand();
 
-  it.todo('removes empty project-local skills directory');
-  // Create empty .claude/skills/gitnexus/
-  // Assert: cleaned up
+    const migrationNotice = consoleOutput.find(line => line.includes('Removed project-local skills'));
+    expect(migrationNotice).toBeDefined();
+  });
 
-  it.todo('removes project-local skills dir even with extra files');
-  // Create .claude/skills/gitnexus/ with a custom extra file
-  // Assert: entire gitnexus/ dir removed (it's our namespace)
+  it('does nothing when no project-local skills exist', async () => {
+    await fs.mkdir(path.join(tmpHome, '.claude'), { recursive: true });
+    await fs.mkdir(path.join(tmpRepo, '.git'), { recursive: true });
+
+    await setupCommand();
+
+    const migrationNotice = consoleOutput.find(line => line.includes('Removed project-local skills'));
+    expect(migrationNotice).toBeUndefined();
+  });
+
+  it('does not remove project-local skills if not in a git repo', async () => {
+    await fs.mkdir(path.join(tmpHome, '.claude'), { recursive: true });
+    const localSkillsDir = path.join(tmpRepo, '.claude', 'skills', 'gitnexus');
+    await fs.mkdir(localSkillsDir, { recursive: true });
+
+    await setupCommand();
+
+    const stat = await fs.stat(localSkillsDir);
+    expect(stat.isDirectory()).toBe(true);
+  });
+
+  it('removes empty project-local skills directory', async () => {
+    await fs.mkdir(path.join(tmpHome, '.claude'), { recursive: true });
+    await fs.mkdir(path.join(tmpRepo, '.git'), { recursive: true });
+    const localSkillsDir = path.join(tmpRepo, '.claude', 'skills', 'gitnexus');
+    await fs.mkdir(localSkillsDir, { recursive: true });
+
+    await setupCommand();
+
+    await expect(fs.stat(localSkillsDir)).rejects.toThrow();
+  });
+
+  it('removes project-local skills dir even with extra files', async () => {
+    await fs.mkdir(path.join(tmpHome, '.claude'), { recursive: true });
+    await fs.mkdir(path.join(tmpRepo, '.git'), { recursive: true });
+    const localSkillsDir = path.join(tmpRepo, '.claude', 'skills', 'gitnexus');
+    await fs.mkdir(localSkillsDir, { recursive: true });
+    await fs.writeFile(path.join(localSkillsDir, 'README.txt'), 'user custom note');
+
+    await setupCommand();
+
+    await expect(fs.stat(localSkillsDir)).rejects.toThrow();
+  });
 });

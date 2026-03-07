@@ -131,10 +131,12 @@ The existing tip at `analyze.ts:363` says "Run `gitnexus setup` to configure MCP
 | `gitnexus/src/cli/ai-context.ts` | Remove `installSkills()` function and its call |
 | `gitnexus/src/cli/analyze.ts` | Add deprecation notice for stale local skills; update setup tip |
 | `gitnexus/src/cli/setup.ts` | Export `installSkillsTo` and `SKILL_NAMES`; add cleanup of project-local skills during global install |
-| `gitnexus/test/unit/ai-context.test.ts` | Add regression guards + post-refactor acceptance placeholders |
-| `gitnexus/test/unit/setup-skills.test.ts` | New — tests `installSkillsTo` core logic + setup cleanup placeholders |
-| `gitnexus/test/unit/analyze-skills-notice.test.ts` | New — tests stale skills deprecation notice helper |
+| `gitnexus/test/unit/ai-context.test.ts` | Regression guards + active acceptance tests that assert `analyze` no longer installs skills |
+| `gitnexus/test/unit/setup-skills.test.ts` | `installSkillsTo` core tests + active `setupCommand` cleanup acceptance tests |
+| `gitnexus/test/unit/analyze-skills-notice.test.ts` | Contract tests bound to production export (`checkStaleProjectSkills`) instead of local helper |
 | `README.md` | Fix skill count, clarify command responsibilities |
+| `docs/test-plan-skill-installation-refactor.md` | Add test-phase changelog and rationale for active acceptance tests |
+| `docs/pr-skill-installation-refactor.md` | Add progress changelog for test hardening |
 
 ---
 
@@ -152,12 +154,19 @@ The existing tip at `analyze.ts:363` says "Run `gitnexus setup` to configure MCP
 
 - Designed test plan covering 21 test cases across 3 files (`docs/test-plan-skill-installation-refactor.md`)
 - Exported `installSkillsTo` and `SKILL_NAMES` from `setup.ts` to enable direct testing
-- Implemented tests in 3 files:
-  - `test/unit/ai-context.test.ts` — 9 passing + 2 todo (post-refactor acceptance)
-  - `test/unit/setup-skills.test.ts` — 5 passing + 6 todo (post-refactor acceptance)
-  - `test/unit/analyze-skills-notice.test.ts` — 4 passing (notice helper works now)
-- All 852 unit tests pass (39 files), no regressions
+- Implemented tests in 3 files and hardened weak assertions (no swallowed failures, isolated temp dirs per test)
+- Converted acceptance placeholders to active tests for post-refactor behavior
+- Replaced the analyze notice test-only helper with a production-contract test that requires `analyze.ts` export wiring
+- Current intent: acceptance tests stay red until Phase 3 implementation is complete; regression guards stay green
 - Safety: all tests use `os.tmpdir()` temp directories, never touch real `~/.claude/` or working repo
+
+### Phase 2A: Test Hardening Changelog (2026-03-07)
+
+- Activated acceptance tests in `ai-context.test.ts` (#1, #2) to enforce "no skills from analyze" behavior.
+- Activated migration cleanup acceptance tests in `setup-skills.test.ts` (#11, #12, #19, #20).
+- Kept `setup-skills` non-cleanup assertions green and made missing-source behavior explicit via targeted FS mocking.
+- Converted `analyze-skills-notice.test.ts` from local placeholder implementation to production export contract checks.
+- Deferred cleanup edge case #21 (read-only directory) until cleanup implementation exists to avoid false signal.
 
 ### Phase 3: Implementation (pending)
 
@@ -165,7 +174,7 @@ The existing tip at `analyze.ts:363` says "Run `gitnexus setup` to configure MCP
 - Add stale skills notice to `analyze`
 - Add project-local cleanup to `setup`
 - Update `analyze` tip to mention skills
-- Flip `todo` tests to active, remove old skills test
+- Make active acceptance tests pass
 
 ### Phase 4: README Update (pending)
 

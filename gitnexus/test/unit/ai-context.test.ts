@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
@@ -8,13 +8,13 @@ describe('generateAIContextFiles', () => {
   let tmpDir: string;
   let storagePath: string;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-ai-ctx-test-'));
     storagePath = path.join(tmpDir, '.gitnexus');
     await fs.mkdir(storagePath, { recursive: true });
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     try {
       await fs.rm(tmpDir, { recursive: true, force: true });
     } catch { /* best-effort */ }
@@ -50,11 +50,12 @@ describe('generateAIContextFiles', () => {
   });
 
   it('updates existing CLAUDE.md without duplicating', async () => {
-    const stats = { nodes: 10 };
+    const firstStats = { nodes: 10, edges: 20, processes: 2 };
+    const secondStats = { nodes: 11, edges: 22, processes: 3 };
 
     // Run twice
-    await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
-    await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
+    await generateAIContextFiles(tmpDir, storagePath, 'TestProject', firstStats);
+    await generateAIContextFiles(tmpDir, storagePath, 'TestProject', secondStats);
 
     const claudeMdPath = path.join(tmpDir, 'CLAUDE.md');
     const content = await fs.readFile(claudeMdPath, 'utf-8');
@@ -62,37 +63,24 @@ describe('generateAIContextFiles', () => {
     // Should only have one gitnexus section
     const starts = (content.match(/gitnexus:start/g) || []).length;
     expect(starts).toBe(1);
+    expect(content).toContain('11 symbols');
+    expect(content).not.toContain('10 symbols');
   });
 
-  it('installs skills files', async () => {
+  it('does NOT install skills after refactor', async () => {
+    const stats = { nodes: 10 };
+    await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
+
+    const skillsDir = path.join(tmpDir, '.claude', 'skills', 'gitnexus');
+    await expect(fs.stat(skillsDir)).rejects.toThrow();
+  });
+
+  it('return value does not mention skills after refactor', async () => {
     const stats = { nodes: 10 };
     const result = await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
-
-    // Should have installed skill files
-    const skillsDir = path.join(tmpDir, '.claude', 'skills', 'gitnexus');
-    try {
-      const entries = await fs.readdir(skillsDir, { recursive: true });
-      expect(entries.length).toBeGreaterThan(0);
-    } catch {
-      // Skills dir may not be created if skills source doesn't exist in test context
-    }
+    const hasSkillEntry = result.files.some(f => f.includes('skills'));
+    expect(hasSkillEntry).toBe(false);
   });
-
-  // ── POST-REFACTOR: these will replace the above test ─────────────
-  // After the refactor, generateAIContextFiles should NOT install skills.
-  // Uncomment these and remove the test above once the refactor lands.
-
-  it.todo('does NOT install skills after refactor');
-  // const stats = { nodes: 10 };
-  // await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
-  // const skillsDir = path.join(tmpDir, '.claude', 'skills', 'gitnexus');
-  // await expect(fs.stat(skillsDir)).rejects.toThrow(); // Should not exist
-
-  it.todo('return value does not mention skills after refactor');
-  // const stats = { nodes: 10 };
-  // const result = await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
-  // const hasSkillEntry = result.files.some(f => f.includes('skills'));
-  // expect(hasSkillEntry).toBe(false);
 
   // ── Regression guards (should pass before AND after refactor) ────
 
@@ -146,5 +134,6 @@ describe('generateAIContextFiles', () => {
     // Still only one section
     const starts = (content.match(/gitnexus:start/g) || []).length;
     expect(starts).toBe(1);
+    await expect(fs.stat(path.join(tmpDir, '.claude', 'skills', 'gitnexus'))).rejects.toThrow();
   });
 });
