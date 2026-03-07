@@ -70,13 +70,13 @@ The CLI indexes your repository and runs an MCP server that gives AI agents deep
 npx gitnexus analyze
 ```
 
-That's it. This indexes the codebase, installs agent skills, registers Claude Code hooks, and creates `AGENTS.md` / `CLAUDE.md` context files — all in one command.
+That's it. This indexes the codebase and creates `AGENTS.md` / `CLAUDE.md` context files — all in one command.
 
-To configure MCP for your editor, run `npx gitnexus setup` once — or set it up manually below.
+To configure MCP, install agent skills, and register hooks for your editor, run `npx gitnexus setup` once — or set it up manually below.
 
 ### MCP Setup
 
-`gitnexus setup` auto-detects your editors and writes the correct global MCP config. You only need to run it once.
+`gitnexus setup` auto-detects your editors and writes the correct global MCP config, installs agent skills, and registers hooks. You only need to run it once.
 
 ### Editor Support
 
@@ -132,7 +132,7 @@ claude mcp add gitnexus -- npx -y gitnexus@latest mcp
 ### CLI Commands
 
 ```bash
-gitnexus setup                    # Configure MCP for your editors (one-time)
+gitnexus setup                    # Configure MCP, skills, and hooks (one-time)
 gitnexus analyze [path]           # Index a repository (or update stale index)
 gitnexus analyze --force          # Force full re-index
 gitnexus analyze --skip-embeddings  # Skip embedding generation (faster)
@@ -182,12 +182,14 @@ gitnexus wiki --base-url <url>   # Wiki with custom LLM API base URL
 | `detect_impact` | Pre-commit change analysis — scope, affected processes, risk level       |
 | `generate_map`  | Architecture documentation from the knowledge graph with mermaid diagrams |
 
-**4 agent skills** installed to `.claude/skills/` automatically:
+**6 agent skills** installed to `~/.claude/skills/` via `gitnexus setup`:
 
 - **Exploring** — Navigate unfamiliar code using the knowledge graph
 - **Debugging** — Trace bugs through call chains
 - **Impact Analysis** — Analyze blast radius before changes
 - **Refactoring** — Plan safe refactors using dependency mapping
+- **Guide** — GitNexus tool reference, graph schema, and workflow guidance
+- **CLI** — Run GitNexus CLI commands (analyze, status, clean, wiki, etc.)
 
 ---
 

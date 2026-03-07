@@ -134,7 +134,7 @@ The existing tip at `analyze.ts:363` says "Run `gitnexus setup` to configure MCP
 | `gitnexus/test/unit/ai-context.test.ts` | Regression guards + active acceptance tests that assert `analyze` no longer installs skills |
 | `gitnexus/test/unit/setup-skills.test.ts` | `installSkillsTo` core tests + active `setupCommand` cleanup acceptance tests |
 | `gitnexus/test/unit/analyze-skills-notice.test.ts` | Contract tests bound to production export (`checkStaleProjectSkills`) instead of local helper |
-| `README.md` | **Pending (Phase 4)** — no README edits in this branch yet |
+| `README.md` | Fix skill count (6 not 4), clarify command responsibilities |
 | `docs/test-plan-skill-installation-refactor.md` | Add test-phase changelog and rationale for active acceptance tests |
 | `docs/pr-skill-installation-refactor.md` | Add progress changelog for test hardening |
 
@@ -199,8 +199,10 @@ Residual edge cases found in review (not addressed in this branch):
   - `npx vitest run test/unit/setup-skills.test.ts test/unit/analyze-skills-notice.test.ts` → **18/18 passing**
   - `npm test` (unit suite) → **862/862 passing**
 
-### Phase 4: README Update (pending)
+### Phase 4: README Update (completed)
 
-- Fix skill count (6, not 4)
-- List all skills including `gitnexus-guide` and `gitnexus-cli`
-- Clarify command responsibilities
+- Fixed skill count: 4 → 6, added Guide and CLI skills to the list
+- Changed install location from `.claude/skills/` to `~/.claude/skills/` with `via gitnexus setup`
+- Clarified Quick Start: `analyze` indexes + creates context files; `setup` handles MCP + skills + hooks
+- Updated MCP Setup description to mention skills and hooks
+- Updated CLI command comment for `setup`
