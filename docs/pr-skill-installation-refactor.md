@@ -168,13 +168,14 @@ The existing tip at `analyze.ts:363` says "Run `gitnexus setup` to configure MCP
 - Converted `analyze-skills-notice.test.ts` from local placeholder implementation to production export contract checks.
 - Deferred cleanup edge case #21 (read-only directory) until cleanup implementation exists to avoid false signal.
 
-### Phase 3: Implementation (pending)
+### Phase 3: Implementation (completed)
 
-- Remove `installSkills()` from `ai-context.ts`
-- Add stale skills notice to `analyze`
-- Add project-local cleanup to `setup`
-- Update `analyze` tip to mention skills
-- Make active acceptance tests pass
+- Removed `installSkills()` function and its call from `ai-context.ts`; cleaned up unused `fileURLToPath`/`__dirname` imports
+- Added `checkStaleProjectSkills(repoPath)` export to `analyze.ts` — warns but does not delete
+- Called `checkStaleProjectSkills` in analyze flow after generating AI context files
+- Updated setup tip in `analyze.ts` to mention skills alongside MCP
+- Added `cleanupProjectLocalSkills()` to `setup.ts` — removes `.claude/skills/gitnexus/` if cwd is a git repo
+- All 25 skill-related tests pass; all 859 unit tests pass, no regressions
 
 ### Phase 4: README Update (pending)
 

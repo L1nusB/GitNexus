@@ -341,6 +341,40 @@ async function installOpenCodeSkills(result: SetupResult): Promise<void> {
   }
 }
 
+// ─── Project-local skill cleanup ───────────────────────────────────
+
+/**
+ * Remove stale project-local skills left by previous `analyze` runs.
+ * Only cleans up if cwd is a git repo (has .git directory).
+ */
+async function cleanupProjectLocalSkills(result: SetupResult): Promise<void> {
+  const cwd = process.cwd();
+
+  // Only clean up inside git repos
+  const gitDir = path.join(cwd, '.git');
+  try {
+    const stat = await fs.stat(gitDir);
+    if (!stat.isDirectory()) return;
+  } catch {
+    return; // Not a git repo
+  }
+
+  const localSkillsDir = path.join(cwd, '.claude', 'skills', 'gitnexus');
+  try {
+    const stat = await fs.stat(localSkillsDir);
+    if (!stat.isDirectory()) return;
+  } catch {
+    return; // No project-local skills
+  }
+
+  try {
+    await fs.rm(localSkillsDir, { recursive: true, force: true });
+    result.configured.push('Removed project-local skills (now installed globally)');
+  } catch (err: any) {
+    result.errors.push(`Project-local skill cleanup: ${err.message}`);
+  }
+}
+
 // ─── Main command ──────────────────────────────────────────────────
 
 export const setupCommand = async () => {
@@ -369,6 +403,9 @@ export const setupCommand = async () => {
   await installClaudeCodeHooks(result);
   await installCursorSkills(result);
   await installOpenCodeSkills(result);
+
+  // Clean up stale project-local skills left by previous `analyze` runs
+  await cleanupProjectLocalSkills(result);
 
   // Print results
   if (result.configured.length > 0) {

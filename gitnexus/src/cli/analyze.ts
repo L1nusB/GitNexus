@@ -42,6 +42,24 @@ function ensureHeap(): boolean {
   return true;
 }
 
+/**
+ * Check for stale project-local skills left by a previous `analyze` run.
+ * Prints a deprecation notice but does NOT delete — cleanup is handled by `setup`.
+ */
+export async function checkStaleProjectSkills(repoPath: string): Promise<boolean> {
+  const skillsDir = path.join(repoPath, '.claude', 'skills', 'gitnexus');
+  try {
+    const stat = await fs.stat(skillsDir);
+    if (stat.isDirectory()) {
+      console.log(`  Note: Skills are no longer installed by analyze. Run 'gitnexus setup' to manage skills globally.`);
+      return true;
+    }
+  } catch {
+    // Directory doesn't exist — nothing to warn about
+  }
+  return false;
+}
+
 export interface AnalyzeOptions {
   force?: boolean;
   embeddings?: boolean;
@@ -348,6 +366,9 @@ export const analyzeCommand = async (
     console.log(`  Context: ${aiContext.files.join(', ')}`);
   }
 
+  // Warn if stale project-local skills exist from a previous analyze run
+  await checkStaleProjectSkills(repoPath);
+
   // Show a quiet summary if some edge types needed fallback insertion
   if (kuzuWarnings.length > 0) {
     const totalFallback = kuzuWarnings.reduce((sum, w) => {
@@ -360,7 +381,7 @@ export const analyzeCommand = async (
   try {
     await fs.access(getGlobalRegistryPath());
   } catch {
-    console.log('\n  Tip: Run `gitnexus setup` to configure MCP for your editor.');
+    console.log('\n  Tip: Run `gitnexus setup` to configure MCP and install agent skills for your editor.');
   }
 
   console.log('');
