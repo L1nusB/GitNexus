@@ -58,16 +58,19 @@ Beyond the duplication bug, skills are static markdown files that don't depend o
 
 ### Test plan
 
-- [x] `analyze` no longer creates `.claude/skills/gitnexus/` (acceptance tests #1-2)
-- [x] `analyze` prints deprecation notice when stale skills exist (#15-17)
+- [x] `analyze` no longer creates `.claude/skills/gitnexus/` (acceptance tests 1-2)
+- [x] `analyze` prints deprecation notice when stale skills exist (15-17)
 - [x] `analyze` shows notice even on "Already up to date" early return
-- [x] `setup` installs all 7 discovered skills with non-empty SKILL.md (#7-9)
-- [x] `setup` removes project-local skills in git repos (#11-12)
-- [x] `setup` handles nested dirs, worktrees, non-git dirs, empty dirs (#13-14, nested/worktree tests)
-- [x] `discoverSkillNames` discovers flat files, directories, mixed layouts (#27-33)
-- [x] `discoverSkillNames` filters to `gitnexus-*` prefix only (#28)
-- [x] `discoverSkillNames` ignores directories without SKILL.md (#33)
-- [x] All existing tests unaffected — **870/870 passing**
+- [x] `setup` installs all 7 discovered skills with non-empty SKILL.md (7-9)
+- [x] `setup` removes project-local skills in git repos (11-12)
+- [x] `setup` handles nested dirs, worktrees, non-git dirs, empty dirs (13-14, nested/worktree tests)
+- [x] `discoverSkillNames` discovers flat files, directories, mixed layouts (27-33)
+- [x] `discoverSkillNames` filters to `gitnexus-*` prefix only (28)
+- [x] `discoverSkillNames` ignores directories without SKILL.md (33)
+- [x] `discoverSkillNames` documents collision behavior for same-name flat+directory entries (34)
+- [x] `discoverSkillNames` propagates errors: missing root (`ENOENT`), permission failure (`EACCES`) (35-36)
+- [x] `SKILL_NAMES` lazy-population contract: starts empty, populated after first install (37)
+- [x] All existing tests unaffected — **874/874 passing**
 
 ### Commits
 
@@ -82,3 +85,4 @@ Beyond the duplication bug, skills are static markdown files that don't depend o
 | `e132f77` | docs: plan auto-discovery of skill names from disk |
 | `4a88ff6` | test: add acceptance tests for discoverSkillNames |
 | `011b2c1` | feat(skills): auto-discover skill names from disk |
+| `2fa3dd1` | test(skills): add discovery edge-case coverage (#34-37) |
