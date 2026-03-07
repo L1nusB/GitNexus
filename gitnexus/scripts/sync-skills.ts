@@ -9,6 +9,7 @@
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { planSync, type SyncTarget } from '../src/sync-skills.js';
 
 interface Manifest {
@@ -23,7 +24,8 @@ interface TargetConfig {
   generatedHeader: boolean;
 }
 
-const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const SOURCE_DIR = path.join(REPO_ROOT, 'gitnexus', 'skills');
 
 const TARGET_CONFIGS: TargetConfig[] = [

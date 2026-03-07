@@ -62,7 +62,7 @@ Additionally, the runtime installer (`setup.ts`) has a hardcoded `SKILL_NAMES` a
 
 **Legend:**
 1. ¹ Content diff: `.claude` copy omits the sentence about PostToolUse hooks in the `gitnexus-cli` skill.
-2. ² Formatting: `.claude` copies have prettified markdown table columns (padded with spaces). Content is semantically identical.
+2. ² Formatting: `.claude` copies have prettified Markdown table columns (padded with spaces). Content is semantically identical.
 3. ³ Drift: Cursor copies have different (shorter) frontmatter descriptions and compact table formatting. Trailing blank lines removed.
 
 ### Companion files
@@ -115,7 +115,7 @@ The `.claude` copy of the CLI skill is missing a content sentence present in the
 
 ### 3. `.claude` table formatting differences
 
-The `.claude` copies have prettified markdown tables with column padding. This is cosmetic but means byte-level comparison fails, complicating any naive diff-based drift detection.
+The `.claude` copies have prettified Markdown tables with column padding. This is cosmetic but means byte-level comparison fails, complicating any naive diff-based drift detection.
 
 ### 4. Cursor missing 2 of 7 skills
 
