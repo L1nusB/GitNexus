@@ -36,6 +36,22 @@ jobs:
       - run: npx vitest run test/unit --coverage --coverage.thresholdAutoUpdate=false
         working-directory: gitnexus
 
+  skill-sync-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: gitnexus/package-lock.json
+      - run: npm ci
+        working-directory: gitnexus
+      - run: npm run sync:skills
+        working-directory: gitnexus
+      - name: Verify no skill files are out of sync
+        run: git diff --exit-code -- .claude/skills/gitnexus gitnexus-claude-plugin/skills gitnexus-cursor-integration/skills
+
   cross-platform-unit:
     strategy:
       matrix:
