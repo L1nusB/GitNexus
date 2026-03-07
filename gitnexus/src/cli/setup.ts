@@ -344,22 +344,38 @@ async function installOpenCodeSkills(result: SetupResult): Promise<void> {
 // ─── Project-local skill cleanup ───────────────────────────────────
 
 /**
+ * Find the nearest git repository root by walking upward and checking for
+ * a .git marker (directory for standard repos, file for worktrees/submodules).
+ */
+async function findRepoRoot(startPath: string): Promise<string | null> {
+  let current = path.resolve(startPath);
+  const root = path.parse(current).root;
+
+  while (true) {
+    const gitMarker = path.join(current, '.git');
+    try {
+      const stat = await fs.stat(gitMarker);
+      if (stat.isDirectory() || stat.isFile()) {
+        return current;
+      }
+    } catch {
+      // Keep walking up
+    }
+
+    if (current === root) return null;
+    current = path.dirname(current);
+  }
+}
+
+/**
  * Remove stale project-local skills left by previous `analyze` runs.
- * Only cleans up if cwd is a git repo (has .git directory).
+ * Cleans up at repo root and supports both .git directories and files.
  */
 async function cleanupProjectLocalSkills(result: SetupResult): Promise<void> {
-  const cwd = process.cwd();
+  const repoRoot = await findRepoRoot(process.cwd());
+  if (!repoRoot) return; // Not inside a git repo
 
-  // Only clean up inside git repos
-  const gitDir = path.join(cwd, '.git');
-  try {
-    const stat = await fs.stat(gitDir);
-    if (!stat.isDirectory()) return;
-  } catch {
-    return; // Not a git repo
-  }
-
-  const localSkillsDir = path.join(cwd, '.claude', 'skills', 'gitnexus');
+  const localSkillsDir = path.join(repoRoot, '.claude', 'skills', 'gitnexus');
   try {
     const stat = await fs.stat(localSkillsDir);
     if (!stat.isDirectory()) return;

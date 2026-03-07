@@ -9,7 +9,7 @@
 
 ## Safety Approach
 
-All filesystem operations happen inside `fs.mkdtemp()` temp directories, cleaned up in `afterAll`. Tests never touch:
+All filesystem operations happen inside `fs.mkdtemp()` temp directories, cleaned up in test teardown (`afterEach`/`afterAll` depending on file). Tests never touch:
 - The real `~/.claude/` directory
 - The real working repository
 - Any global state
@@ -100,6 +100,20 @@ These tests can be written and run **before** the actual refactor. Here's the st
 - **Tests for setup skills** (#7-10): These test `installSkillsTo` directly and should pass now.
 - **Deferred edge case** (#21): Keep as planned while cleanup implementation is pending.
 
+## Current Status (Post-Implementation)
+
+- Skill-focused suite (`ai-context`, `setup-skills`, `analyze-skills-notice`): **28/28 passing**
+- Full unit suite (`npm test`): **862/862 passing**
+
+## Residual Coverage Gaps
+
+The following edge cases were identified in review and are not yet covered by automated tests:
+
+| # | Gap | Why it matters |
+|---|-----|----------------|
+| 25 | Cleanup behavior when no global skill target is installed/configured | Local skills may be removed even if no replacement global install succeeded |
+| 26 | Setup tip visibility in `analyze` after successful indexing | Tip check happens after registry write, so the new MCP+skills tip may never surface in normal success path |
+
 ## Execution
 
 ```bash
@@ -129,3 +143,13 @@ npm test
   - Acceptance tests are expected to fail until refactor implementation lands.
   - Regression/behavior-preservation tests should continue to pass.
   - Read-only cleanup scenario (#21) remains planned and should be finalized when cleanup implementation exists.
+
+### 2026-03-07 — Phase 3b follow-up coverage
+
+- Added `setup-skills` regression coverage for:
+  - cleanup from nested subdirectory inside repo (fixes gap #23)
+  - cleanup when repo marker is `.git` file (worktree/submodule style, fixes gap #22)
+- Added `analyze-skills-notice` regression coverage ensuring stale-skill notice still appears on `Already up to date` early return (fixes gap #24)
+- Updated suite totals after new tests:
+  - skill-focused suite: 28 tests
+  - full unit suite: 862 tests

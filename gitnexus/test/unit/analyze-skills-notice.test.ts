@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { execSync } from 'child_process';
 
 /**
  * Contract tests for analyze stale-skills notice.
@@ -80,5 +81,45 @@ describe('analyze — stale project-local skills notice', () => {
     const checkStaleProjectSkills = await getCheckStaleProjectSkills();
     const detected = await checkStaleProjectSkills(tmpDir);
     expect(detected).toBe(false);
+  });
+
+  it('prints stale-skills notice on analyze early return (Already up to date)', async () => {
+    // Real git repo so analyzeCommand can resolve repo + commit
+    execSync('git init', { cwd: tmpDir, stdio: 'ignore' });
+    await fs.writeFile(path.join(tmpDir, 'README.md'), 'hello\n', 'utf-8');
+    execSync('git add README.md', { cwd: tmpDir, stdio: 'ignore' });
+    execSync('git -c user.name="Test" -c user.email="test@example.com" commit -m "init"', {
+      cwd: tmpDir,
+      stdio: 'ignore',
+    });
+
+    const commit = execSync('git rev-parse HEAD', { cwd: tmpDir }).toString().trim();
+
+    // Mark index metadata as current so analyze exits early
+    const storagePath = path.join(tmpDir, '.gitnexus');
+    await fs.mkdir(storagePath, { recursive: true });
+    await fs.writeFile(
+      path.join(storagePath, 'meta.json'),
+      JSON.stringify({ repoPath: tmpDir, lastCommit: commit, indexedAt: new Date().toISOString() }, null, 2),
+      'utf-8',
+    );
+
+    // Leave stale project-local skills in place
+    await fs.mkdir(path.join(tmpDir, '.claude', 'skills', 'gitnexus'), { recursive: true });
+
+    const originalNodeOptions = process.env.NODE_OPTIONS;
+    process.env.NODE_OPTIONS = `${originalNodeOptions || ''} --max-old-space-size=8192`.trim();
+    try {
+      const analyzeModule = await import('../../src/cli/analyze.js');
+      const analyzeCommand = (analyzeModule as any).analyzeCommand as (inputPath?: string) => Promise<void>;
+      await analyzeCommand(tmpDir);
+    } finally {
+      process.env.NODE_OPTIONS = originalNodeOptions;
+    }
+
+    const upToDate = consoleOutput.find(line => line.includes('Already up to date'));
+    const notice = consoleOutput.find(line => line.includes('no longer installed by analyze'));
+    expect(upToDate).toBeDefined();
+    expect(notice).toBeDefined();
   });
 });

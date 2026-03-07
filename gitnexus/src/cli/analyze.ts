@@ -116,6 +116,8 @@ export const analyzeCommand = async (
   const existingMeta = await loadMeta(storagePath);
 
   if (existingMeta && !options?.force && existingMeta.lastCommit === currentCommit) {
+    // Keep migration notice visible even on no-op analyze runs
+    await checkStaleProjectSkills(repoPath);
     console.log('  Already up to date\n');
     return;
   }

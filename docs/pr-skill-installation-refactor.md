@@ -134,7 +134,7 @@ The existing tip at `analyze.ts:363` says "Run `gitnexus setup` to configure MCP
 | `gitnexus/test/unit/ai-context.test.ts` | Regression guards + active acceptance tests that assert `analyze` no longer installs skills |
 | `gitnexus/test/unit/setup-skills.test.ts` | `installSkillsTo` core tests + active `setupCommand` cleanup acceptance tests |
 | `gitnexus/test/unit/analyze-skills-notice.test.ts` | Contract tests bound to production export (`checkStaleProjectSkills`) instead of local helper |
-| `README.md` | Fix skill count, clarify command responsibilities |
+| `README.md` | **Pending (Phase 4)** — no README edits in this branch yet |
 | `docs/test-plan-skill-installation-refactor.md` | Add test-phase changelog and rationale for active acceptance tests |
 | `docs/pr-skill-installation-refactor.md` | Add progress changelog for test hardening |
 
@@ -176,6 +176,28 @@ The existing tip at `analyze.ts:363` says "Run `gitnexus setup` to configure MCP
 - Updated setup tip in `analyze.ts` to mention skills alongside MCP
 - Added `cleanupProjectLocalSkills()` to `setup.ts` — removes `.claude/skills/gitnexus/` if cwd is a git repo
 - All 25 skill-related tests pass; all 859 unit tests pass, no regressions
+
+### Post-Implementation Review (2026-03-07)
+
+Validation rerun in this branch:
+- `npx vitest run test/unit/ai-context.test.ts test/unit/setup-skills.test.ts test/unit/analyze-skills-notice.test.ts` → **25/25 passing**
+- `npm test` (unit suite) → **859/859 passing**
+
+Residual edge cases found in review (not addressed in this branch):
+- The updated `analyze` setup tip is effectively unreachable after successful indexing because `registerRepo()` creates the global registry before the tip check.
+- `setup` cleanup runs regardless of whether any global skill install actually succeeded; on machines with no supported editor directories present, stale local skills could be removed without replacement.
+
+### Phase 3b: Follow-up fixes for review findings #1 and #2 (completed)
+
+- Updated project-local cleanup in `setup.ts` to resolve repo root by walking upward and detecting `.git` as either directory or file.
+- Cleanup now works from nested directories and worktree/submodule-style `.git` files.
+- Updated `analyze.ts` early-return branch (`Already up to date`) to still call `checkStaleProjectSkills(repoPath)` so migration notice is not skipped.
+- Added targeted regression tests:
+  - `setup-skills.test.ts`: nested-subdirectory cleanup and `.git` file marker cleanup.
+  - `analyze-skills-notice.test.ts`: stale-skill notice appears on up-to-date early return.
+- Validation rerun after patch:
+  - `npx vitest run test/unit/setup-skills.test.ts test/unit/analyze-skills-notice.test.ts` → **18/18 passing**
+  - `npm test` (unit suite) → **862/862 passing**
 
 ### Phase 4: README Update (pending)
 

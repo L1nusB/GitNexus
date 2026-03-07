@@ -159,6 +159,32 @@ describe('setupCommand — project-local skill cleanup', () => {
     expect(stat.isDirectory()).toBe(true);
   });
 
+  it('removes project-local skills when run from a nested subdirectory', async () => {
+    await fs.mkdir(path.join(tmpHome, '.claude'), { recursive: true });
+    await fs.mkdir(path.join(tmpRepo, '.git'), { recursive: true });
+    const localSkillsDir = path.join(tmpRepo, '.claude', 'skills', 'gitnexus');
+    await fs.mkdir(localSkillsDir, { recursive: true });
+
+    const nestedDir = path.join(tmpRepo, 'packages', 'app');
+    await fs.mkdir(nestedDir, { recursive: true });
+    process.chdir(nestedDir);
+
+    await setupCommand();
+
+    await expect(fs.stat(localSkillsDir)).rejects.toThrow();
+  });
+
+  it('treats .git file as a valid repo marker (worktree/submodule style)', async () => {
+    await fs.mkdir(path.join(tmpHome, '.claude'), { recursive: true });
+    await fs.writeFile(path.join(tmpRepo, '.git'), 'gitdir: /tmp/fake-worktree.git');
+    const localSkillsDir = path.join(tmpRepo, '.claude', 'skills', 'gitnexus');
+    await fs.mkdir(localSkillsDir, { recursive: true });
+
+    await setupCommand();
+
+    await expect(fs.stat(localSkillsDir)).rejects.toThrow();
+  });
+
   it('removes empty project-local skills directory', async () => {
     await fs.mkdir(path.join(tmpHome, '.claude'), { recursive: true });
     await fs.mkdir(path.join(tmpRepo, '.git'), { recursive: true });
