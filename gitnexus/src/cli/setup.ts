@@ -240,7 +240,7 @@ async function setupOpenCode(result: SetupResult): Promise<void> {
 
 // ─── Skill Installation ───────────────────────────────────────────
 
-const SKILL_NAMES = ['gitnexus-exploring', 'gitnexus-debugging', 'gitnexus-impact-analysis', 'gitnexus-refactoring', 'gitnexus-guide', 'gitnexus-cli'];
+export const SKILL_NAMES = ['gitnexus-exploring', 'gitnexus-debugging', 'gitnexus-impact-analysis', 'gitnexus-refactoring', 'gitnexus-guide', 'gitnexus-cli'];
 
 /**
  * Install GitNexus skills to a target directory.
@@ -251,7 +251,7 @@ const SKILL_NAMES = ['gitnexus-exploring', 'gitnexus-debugging', 'gitnexus-impac
  *   - Flat file:  skills/{name}.md           → copied as SKILL.md
  *   - Directory:  skills/{name}/SKILL.md     → copied recursively (includes references/, etc.)
  */
-async function installSkillsTo(targetDir: string): Promise<string[]> {
+export async function installSkillsTo(targetDir: string): Promise<string[]> {
   const installed: string[] = [];
   const skillsRoot = path.join(__dirname, '..', '..', 'skills');
 

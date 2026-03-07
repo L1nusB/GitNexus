@@ -130,5 +130,45 @@ The existing tip at `analyze.ts:363` says "Run `gitnexus setup` to configure MCP
 |---|---|
 | `gitnexus/src/cli/ai-context.ts` | Remove `installSkills()` function and its call |
 | `gitnexus/src/cli/analyze.ts` | Add deprecation notice for stale local skills; update setup tip |
-| `gitnexus/src/cli/setup.ts` | Add cleanup of project-local skills during global install |
+| `gitnexus/src/cli/setup.ts` | Export `installSkillsTo` and `SKILL_NAMES`; add cleanup of project-local skills during global install |
+| `gitnexus/test/unit/ai-context.test.ts` | Add regression guards + post-refactor acceptance placeholders |
+| `gitnexus/test/unit/setup-skills.test.ts` | New — tests `installSkillsTo` core logic + setup cleanup placeholders |
+| `gitnexus/test/unit/analyze-skills-notice.test.ts` | New — tests stale skills deprecation notice helper |
 | `README.md` | Fix skill count, clarify command responsibilities |
+
+---
+
+## Progress Log
+
+### Phase 1: Research & Design (completed)
+
+- Analyzed both commands (`analyze` and `setup`) to understand how each installs skills
+- Identified the duplicate installation problem and its interaction with Claude Code bug [#25209](https://github.com/anthropics/claude-code/issues/25209)
+- Consulted Gemini and Codex for architectural review — both agreed on the approach
+- Evaluated 4 options (A–D), chose Option A with migration handling
+- Documented the full strategy in this file
+
+### Phase 2: Test Design & Implementation (completed)
+
+- Designed test plan covering 21 test cases across 3 files (`docs/test-plan-skill-installation-refactor.md`)
+- Exported `installSkillsTo` and `SKILL_NAMES` from `setup.ts` to enable direct testing
+- Implemented tests in 3 files:
+  - `test/unit/ai-context.test.ts` — 9 passing + 2 todo (post-refactor acceptance)
+  - `test/unit/setup-skills.test.ts` — 5 passing + 6 todo (post-refactor acceptance)
+  - `test/unit/analyze-skills-notice.test.ts` — 4 passing (notice helper works now)
+- All 852 unit tests pass (39 files), no regressions
+- Safety: all tests use `os.tmpdir()` temp directories, never touch real `~/.claude/` or working repo
+
+### Phase 3: Implementation (pending)
+
+- Remove `installSkills()` from `ai-context.ts`
+- Add stale skills notice to `analyze`
+- Add project-local cleanup to `setup`
+- Update `analyze` tip to mention skills
+- Flip `todo` tests to active, remove old skills test
+
+### Phase 4: README Update (pending)
+
+- Fix skill count (6, not 4)
+- List all skills including `gitnexus-guide` and `gitnexus-cli`
+- Clarify command responsibilities

@@ -77,4 +77,74 @@ describe('generateAIContextFiles', () => {
       // Skills dir may not be created if skills source doesn't exist in test context
     }
   });
+
+  // ── POST-REFACTOR: these will replace the above test ─────────────
+  // After the refactor, generateAIContextFiles should NOT install skills.
+  // Uncomment these and remove the test above once the refactor lands.
+
+  it.todo('does NOT install skills after refactor');
+  // const stats = { nodes: 10 };
+  // await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
+  // const skillsDir = path.join(tmpDir, '.claude', 'skills', 'gitnexus');
+  // await expect(fs.stat(skillsDir)).rejects.toThrow(); // Should not exist
+
+  it.todo('return value does not mention skills after refactor');
+  // const stats = { nodes: 10 };
+  // const result = await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
+  // const hasSkillEntry = result.files.some(f => f.includes('skills'));
+  // expect(hasSkillEntry).toBe(false);
+
+  // ── Regression guards (should pass before AND after refactor) ────
+
+  it('generates CLAUDE.md with dynamic stats', async () => {
+    const stats = { nodes: 42, edges: 84, processes: 7 };
+    await generateAIContextFiles(tmpDir, storagePath, 'StatsProject', stats);
+
+    const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    expect(content).toContain('42 symbols');
+    expect(content).toContain('84 relationships');
+    expect(content).toContain('7 execution flows');
+  });
+
+  it('generates AGENTS.md alongside CLAUDE.md', async () => {
+    const stats = { nodes: 10, edges: 20, processes: 3 };
+    await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
+
+    const agentsPath = path.join(tmpDir, 'AGENTS.md');
+    const content = await fs.readFile(agentsPath, 'utf-8');
+    expect(content).toContain('gitnexus:start');
+    expect(content).toContain('gitnexus:end');
+  });
+
+  it('preserves existing non-GitNexus content in CLAUDE.md', async () => {
+    // Pre-create CLAUDE.md with custom content
+    const claudePath = path.join(tmpDir, 'CLAUDE.md');
+    await fs.writeFile(claudePath, '# My Custom Instructions\n\nDo not remove this.\n', 'utf-8');
+
+    const stats = { nodes: 10 };
+    await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
+
+    const content = await fs.readFile(claudePath, 'utf-8');
+    expect(content).toContain('My Custom Instructions');
+    expect(content).toContain('Do not remove this.');
+    expect(content).toContain('gitnexus:start');
+  });
+
+  it('existing CLAUDE.md with gitnexus section but no skills dir works', async () => {
+    // Pre-create CLAUDE.md with an existing gitnexus section
+    const claudePath = path.join(tmpDir, 'CLAUDE.md');
+    await fs.writeFile(claudePath, '<!-- gitnexus:start -->\nold content\n<!-- gitnexus:end -->\n', 'utf-8');
+
+    const stats = { nodes: 99 };
+    await generateAIContextFiles(tmpDir, storagePath, 'UpdatedProject', stats);
+
+    const content = await fs.readFile(claudePath, 'utf-8');
+    // Old content replaced
+    expect(content).not.toContain('old content');
+    // New content present
+    expect(content).toContain('99 symbols');
+    // Still only one section
+    const starts = (content.match(/gitnexus:start/g) || []).length;
+    expect(starts).toBe(1);
+  });
 });
