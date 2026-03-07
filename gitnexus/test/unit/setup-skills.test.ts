@@ -309,4 +309,58 @@ describe('discoverSkillNames', () => {
     const names = await discoverSkillNames(tmpDir);
     expect(names).toEqual([]);
   });
+
+  it('handles colliding flat+directory entries with same skill name', async () => {
+    if (!discoverSkillNames) return expect.fail('discoverSkillNames not exported');
+    await fs.writeFile(path.join(tmpDir, 'gitnexus-collision.md'), 'flat skill');
+    const dirSkill = path.join(tmpDir, 'gitnexus-collision');
+    await fs.mkdir(dirSkill, { recursive: true });
+    await fs.writeFile(path.join(dirSkill, 'SKILL.md'), 'dir skill');
+
+    const names = await discoverSkillNames(tmpDir);
+    expect(names).toEqual(['gitnexus-collision', 'gitnexus-collision']);
+  });
+
+  it('throws when skills root does not exist', async () => {
+    if (!discoverSkillNames) return expect.fail('discoverSkillNames not exported');
+    const missingRoot = path.join(tmpDir, 'does-not-exist');
+
+    await expect(discoverSkillNames(missingRoot)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('propagates readdir permission failures', async () => {
+    if (!discoverSkillNames) return expect.fail('discoverSkillNames not exported');
+    const protectedRoot = path.join(tmpDir, 'protected');
+    await fs.mkdir(protectedRoot, { recursive: true });
+
+    const originalReaddir = fs.readdir.bind(fs);
+    const readdirSpy = vi.spyOn(fs, 'readdir').mockImplementation(async (...args: any[]) => {
+      const target = String(args[0]);
+      if (target === protectedRoot) {
+        const err = new Error('EACCES');
+        (err as NodeJS.ErrnoException).code = 'EACCES';
+        throw err;
+      }
+      return originalReaddir(...args as any);
+    });
+
+    await expect(discoverSkillNames(protectedRoot)).rejects.toMatchObject({ code: 'EACCES' });
+    readdirSpy.mockRestore();
+  });
+
+  it('SKILL_NAMES export is lazily populated on first install', async () => {
+    vi.resetModules();
+    const freshSetup = await import('../../src/cli/setup.js');
+    const targetDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-lazy-skill-names-'));
+
+    try {
+      expect(freshSetup.SKILL_NAMES).toEqual([]);
+
+      const installed = await freshSetup.installSkillsTo(targetDir);
+      expect(freshSetup.SKILL_NAMES.length).toBeGreaterThan(0);
+      expect(installed.sort()).toEqual([...freshSetup.SKILL_NAMES].sort());
+    } finally {
+      await fs.rm(targetDir, { recursive: true, force: true });
+    }
+  });
 });

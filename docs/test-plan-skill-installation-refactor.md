@@ -88,7 +88,7 @@ Since `analyzeCommand` is heavy (requires KuzuDB, pipeline, etc.), we don't test
 | File | Tests | Type |
 |------|-------|------|
 | `test/unit/ai-context.test.ts` | #1-6, #18 | Unit — update existing + add new |
-| `test/unit/setup-skills.test.ts` | #7-14, #19-21, #27-33 | Unit — new file |
+| `test/unit/setup-skills.test.ts` | #7-14, #19-21, #27-37 | Unit — new file |
 | `test/unit/analyze-skills-notice.test.ts` | #15-17 | Unit — new file |
 
 ## Running Tests Pre-Implementation
@@ -102,8 +102,8 @@ These tests can be written and run **before** the actual refactor. Here's the st
 
 ## Current Status (Post-Implementation)
 
-- Skill-focused suite (`ai-context`, `setup-skills`, `analyze-skills-notice`): **36/36 passing**
-- Full unit suite (`npm test`): **870/870 passing**
+- Skill-focused suite (`ai-context`, `setup-skills`, `analyze-skills-notice`): **40/40 passing**
+- Full unit suite (`npm test`): **874/874 passing**
 
 ## New Unit Tests: `test/unit/setup-skills.test.ts` — skill discovery
 
@@ -118,6 +118,10 @@ These test the `discoverSkillNames()` function that replaces the hardcoded `SKIL
 | 31 | Handles mixed layouts (flat + directory) | Create both `gitnexus-a.md` and `gitnexus-b/SKILL.md` | Returns both `gitnexus-a` and `gitnexus-b` |
 | 32 | Returns empty array for empty directory | Create empty temp dir | Returns `[]` |
 | 33 | Directories without SKILL.md are ignored | Create `gitnexus-broken/` with no SKILL.md | Returns `[]` |
+| 34 | Colliding flat + directory entries are explicitly covered | Create both `gitnexus-collision.md` and `gitnexus-collision/SKILL.md` | Documents current duplicate-name behavior |
+| 35 | Missing skills root behavior is explicit | Call with non-existent skills root | Rejects with `ENOENT` |
+| 36 | Readdir permission failure behavior is explicit | Mock `fs.readdir` to throw `EACCES` for one root | Rejects with `EACCES` |
+| 37 | `SKILL_NAMES` lazy export contract is covered | Fresh-import module, then call `installSkillsTo` | Starts empty, populated after first install |
 
 ## Residual Coverage Gaps
 
@@ -176,3 +180,14 @@ npm test
 - Updated suite totals:
   - skill-focused suite: 36 tests
   - full unit suite: 870 tests
+
+### 2026-03-07 — Phase 5A: Discovery edge-case hardening
+
+- Added 4 additional discovery tests (#34-#37) for:
+  - flat+directory name collision handling (current behavior documentation)
+  - missing root (`ENOENT`) propagation
+  - permission failure (`EACCES`) propagation
+  - `SKILL_NAMES` lazy-population contract after first install
+- Updated suite totals:
+  - skill-focused suite: 40 tests
+  - full unit suite: 874 tests

@@ -219,6 +219,15 @@ Residual edge cases found in review (not addressed in this branch):
 - Existing `installSkillsTo` tests adapt automatically (they reference `SKILL_NAMES.length`)
 - Validation: **870/870 unit tests passing**
 
+### Phase 5A: Discovery edge-case test hardening (completed)
+
+- Added 4 high-value tests in `setup-skills.test.ts`:
+  - Collision case where both `gitnexus-x.md` and `gitnexus-x/SKILL.md` exist
+  - Missing skills-root error propagation (`ENOENT`)
+  - Permission/read failure propagation (`EACCES` via mocked `fs.readdir`)
+  - `SKILL_NAMES` lazy-population export contract (empty before first install, populated after)
+- Validation: **874/874 unit tests passing**
+
 ### Phase 4: README Update (completed)
 
 - Fixed skill count: 4 → 6, added Guide and CLI skills to the list
