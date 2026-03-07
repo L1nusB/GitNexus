@@ -428,8 +428,8 @@ no mechanism to keep them in sync, and drift has already occurred:
 |------|--------|---------|
 | 2026-03-07 | Document created | Consolidated from `analysis-skill-sync-strategy.md` and `skill-sync-analysis.md`. Verified current drift state against actual files. Designed test plan (T1–T10). |
 | 2026-03-07 | Phase 1 complete | Reconciled all drifted content. `.claude/gitnexus-cli` PostToolUse sentence restored. `gitnexus-claude-plugin/gitnexus-cli` tables + content aligned. Cursor frontmatter descriptions restored to canonical for all 5 existing skills. Missing Cursor skills (`gitnexus-cli`, `gitnexus-guide`) added. All 28 derived files now byte-identical to `gitnexus/skills/` source. `SKILL_NAMES` in `setup.ts` updated to include `gitnexus-pr-review` (7 of 7). |
-| | **Next:** | Write test file `sync-skills.test.ts` (Phase 2) |
-| | **Then:** | Implement sync script (Phase 3) |
+| 2026-03-07 | Phase 2 complete | Created `gitnexus/test/unit/sync-skills.test.ts` with 35 tests across 10 groups (T1–T10). Created `gitnexus/src/sync-skills.ts` stub exporting `planSync`, `SyncTarget`, and `SyncOperation` types. TDD red phase confirmed: 29 tests fail (awaiting implementation), 6 pass (repo-state assertions T8.2/T8.3, SKILL_NAMES parity T9.1/T9.2, invalid-input error tests T10.3/T10.4). All 839 existing unit tests remain green. |
+| | **Next:** | Implement sync script `planSync()` (Phase 3) |
 | | **Then:** | Add manifests and CI (Phases 4–5) |
 
 ---
