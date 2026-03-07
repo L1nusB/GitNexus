@@ -240,7 +240,53 @@ async function setupOpenCode(result: SetupResult): Promise<void> {
 
 // ─── Skill Installation ───────────────────────────────────────────
 
-export const SKILL_NAMES = ['gitnexus-exploring', 'gitnexus-debugging', 'gitnexus-impact-analysis', 'gitnexus-refactoring', 'gitnexus-guide', 'gitnexus-cli'];
+/**
+ * Discover skill names from a skills source directory.
+ *
+ * Scans for two layouts:
+ *   - Flat file:  gitnexus-{name}.md         → skill name "gitnexus-{name}"
+ *   - Directory:  gitnexus-{name}/SKILL.md   → skill name "gitnexus-{name}"
+ *
+ * Only entries prefixed with "gitnexus-" are included.
+ * Directories without a SKILL.md are ignored.
+ */
+export async function discoverSkillNames(skillsRoot: string): Promise<string[]> {
+  const entries = await fs.readdir(skillsRoot, { withFileTypes: true });
+  const names: string[] = [];
+
+  for (const entry of entries) {
+    if (!entry.name.startsWith('gitnexus-')) continue;
+
+    if (entry.isFile() && entry.name.endsWith('.md')) {
+      names.push(entry.name.replace(/\.md$/, ''));
+    } else if (entry.isDirectory()) {
+      try {
+        await fs.access(path.join(skillsRoot, entry.name, 'SKILL.md'));
+        names.push(entry.name);
+      } catch { /* no SKILL.md — skip */ }
+    }
+  }
+
+  return names.sort();
+}
+
+/** Default skills source directory (resolved relative to this file). */
+const DEFAULT_SKILLS_ROOT = path.join(__dirname, '..', '..', 'skills');
+
+/**
+ * Skill names discovered from the skills/ source directory.
+ * Computed lazily on first access; exported for test compatibility.
+ */
+export let SKILL_NAMES: string[] = [];
+let _skillNamesResolved = false;
+
+async function ensureSkillNames(): Promise<string[]> {
+  if (!_skillNamesResolved) {
+    SKILL_NAMES = await discoverSkillNames(DEFAULT_SKILLS_ROOT);
+    _skillNamesResolved = true;
+  }
+  return SKILL_NAMES;
+}
 
 /**
  * Install GitNexus skills to a target directory.
@@ -253,9 +299,10 @@ export const SKILL_NAMES = ['gitnexus-exploring', 'gitnexus-debugging', 'gitnexu
  */
 export async function installSkillsTo(targetDir: string): Promise<string[]> {
   const installed: string[] = [];
-  const skillsRoot = path.join(__dirname, '..', '..', 'skills');
+  const skillsRoot = DEFAULT_SKILLS_ROOT;
+  const skillNames = await ensureSkillNames();
 
-  for (const skillName of SKILL_NAMES) {
+  for (const skillName of skillNames) {
     const skillDir = path.join(targetDir, skillName);
 
     try {

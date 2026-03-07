@@ -102,8 +102,8 @@ These tests can be written and run **before** the actual refactor. Here's the st
 
 ## Current Status (Post-Implementation)
 
-- Skill-focused suite (`ai-context`, `setup-skills`, `analyze-skills-notice`): **28/28 passing**
-- Full unit suite (`npm test`): **862/862 passing**
+- Skill-focused suite (`ai-context`, `setup-skills`, `analyze-skills-notice`): **36/36 passing**
+- Full unit suite (`npm test`): **870/870 passing**
 
 ## New Unit Tests: `test/unit/setup-skills.test.ts` — skill discovery
 
@@ -167,3 +167,12 @@ npm test
 - Updated suite totals after new tests:
   - skill-focused suite: 28 tests
   - full unit suite: 862 tests
+
+### 2026-03-07 — Phase 5: Auto-discover skill names
+
+- Added `discoverSkillNames` describe block with 8 tests (#27-33 + export check)
+- Tests cover: real source discovery, prefix filtering, flat files, directory-based skills, mixed layouts, empty dir, directories without SKILL.md
+- All 8 tests initially failed ("discoverSkillNames not exported"), then passed after implementation
+- Updated suite totals:
+  - skill-focused suite: 36 tests
+  - full unit suite: 870 tests

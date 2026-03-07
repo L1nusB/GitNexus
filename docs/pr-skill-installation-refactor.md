@@ -209,14 +209,15 @@ Residual edge cases found in review (not addressed in this branch):
   - `npx vitest run test/unit/setup-skills.test.ts test/unit/analyze-skills-notice.test.ts` → **18/18 passing**
   - `npm test` (unit suite) → **862/862 passing**
 
-### Phase 5: Auto-discover skill names (planned)
+### Phase 5: Auto-discover skill names (completed)
 
-- Replace hardcoded `SKILL_NAMES` array with `discoverSkillNames()` that reads `gitnexus/skills/` at install time
-- Picks up `gitnexus-pr-review` automatically (previously missed)
-- Discovery: flat `.md` files → strip extension; directories with `SKILL.md` → use dir name; filter to `gitnexus-*` prefix
-- `SKILL_NAMES` export becomes the result of `discoverSkillNames()` (async, called once per `installSkillsTo` invocation)
-- New tests: `discoverSkillNames` discovery logic, prefix filtering, mixed layout handling
+- Replaced hardcoded `SKILL_NAMES` array with `discoverSkillNames(skillsRoot)` that reads the skills source directory
+- `gitnexus-pr-review` now automatically discovered and installed (7 skills total, up from 6)
+- Discovery logic: flat `.md` files → strip extension; directories with `SKILL.md` → use dir name; filter to `gitnexus-*` prefix
+- `SKILL_NAMES` export preserved for test compatibility (lazily populated on first `installSkillsTo` call)
+- 8 new tests (#27-33 + export check): all passing
 - Existing `installSkillsTo` tests adapt automatically (they reference `SKILL_NAMES.length`)
+- Validation: **870/870 unit tests passing**
 
 ### Phase 4: README Update (completed)
 
