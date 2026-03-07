@@ -88,7 +88,7 @@ Since `analyzeCommand` is heavy (requires KuzuDB, pipeline, etc.), we don't test
 | File | Tests | Type |
 |------|-------|------|
 | `test/unit/ai-context.test.ts` | #1-6, #18 | Unit — update existing + add new |
-| `test/unit/setup-skills.test.ts` | #7-14, #19-21 | Unit — new file |
+| `test/unit/setup-skills.test.ts` | #7-14, #19-21, #27-33 | Unit — new file |
 | `test/unit/analyze-skills-notice.test.ts` | #15-17 | Unit — new file |
 
 ## Running Tests Pre-Implementation
@@ -104,6 +104,20 @@ These tests can be written and run **before** the actual refactor. Here's the st
 
 - Skill-focused suite (`ai-context`, `setup-skills`, `analyze-skills-notice`): **28/28 passing**
 - Full unit suite (`npm test`): **862/862 passing**
+
+## New Unit Tests: `test/unit/setup-skills.test.ts` — skill discovery
+
+These test the `discoverSkillNames()` function that replaces the hardcoded `SKILL_NAMES` array.
+
+| # | Test | Setup | Assertion |
+|---|------|-------|-----------|
+| 27 | Discovers all skills from the real source directory | Call `discoverSkillNames()` with the real skills root | Returns at least 7 names including `gitnexus-pr-review` |
+| 28 | Only includes `gitnexus-*` prefixed entries | Create temp dir with `gitnexus-foo.md`, `README.md`, `notes.txt` | Returns only `gitnexus-foo` |
+| 29 | Discovers flat `.md` files | Create temp dir with `gitnexus-test.md` | Returns `['gitnexus-test']` |
+| 30 | Discovers directory-based skills | Create temp dir with `gitnexus-test/SKILL.md` | Returns `['gitnexus-test']` |
+| 31 | Handles mixed layouts (flat + directory) | Create both `gitnexus-a.md` and `gitnexus-b/SKILL.md` | Returns both `gitnexus-a` and `gitnexus-b` |
+| 32 | Returns empty array for empty directory | Create empty temp dir | Returns `[]` |
+| 33 | Directories without SKILL.md are ignored | Create `gitnexus-broken/` with no SKILL.md | Returns `[]` |
 
 ## Residual Coverage Gaps
 

@@ -119,10 +119,20 @@ The existing tip at `analyze.ts:363` says "Run `gitnexus setup` to configure MCP
 - Clarify that `analyze` handles indexing + dynamic context, `setup` handles MCP + skills + hooks
 - Correct line 73 which incorrectly attributes hooks to `analyze`
 
-### 6. Future work (out of scope for this PR)
+### 6. Auto-discover skill names from disk
 
-- Add `gitnexus-pr-review` to the `SKILL_NAMES` list in `setup.ts`
-- Unify the skill name constants into a single shared location
+Replace the hardcoded `SKILL_NAMES` array in `setup.ts` with a `discoverSkillNames()` function that reads the `skills/` source directory at install time. This:
+
+- Automatically picks up `gitnexus-pr-review` (previously missed because it wasn't in the hardcoded list)
+- Prevents future breakage when skill files are renamed or added
+- Removes the need for a shared constant — the filesystem is the source of truth
+
+Discovery logic:
+- **Flat files**: `gitnexus-exploring.md` → skill name `gitnexus-exploring`
+- **Directories**: `gitnexus-cli/SKILL.md` → skill name `gitnexus-cli`
+- Only entries matching `gitnexus-*` are included (avoids picking up stray files like `README.md`)
+
+`SKILL_NAMES` remains exported (now computed dynamically) for test compatibility.
 
 ## Files Changed
 
@@ -130,7 +140,7 @@ The existing tip at `analyze.ts:363` says "Run `gitnexus setup` to configure MCP
 |---|---|
 | `gitnexus/src/cli/ai-context.ts` | Remove `installSkills()` function and its call |
 | `gitnexus/src/cli/analyze.ts` | Add deprecation notice for stale local skills; update setup tip |
-| `gitnexus/src/cli/setup.ts` | Export `installSkillsTo` and `SKILL_NAMES`; add cleanup of project-local skills during global install |
+| `gitnexus/src/cli/setup.ts` | Replace hardcoded `SKILL_NAMES` with `discoverSkillNames()`; export `installSkillsTo` and `SKILL_NAMES`; add cleanup of project-local skills during global install |
 | `gitnexus/test/unit/ai-context.test.ts` | Regression guards + active acceptance tests that assert `analyze` no longer installs skills |
 | `gitnexus/test/unit/setup-skills.test.ts` | `installSkillsTo` core tests + active `setupCommand` cleanup acceptance tests |
 | `gitnexus/test/unit/analyze-skills-notice.test.ts` | Contract tests bound to production export (`checkStaleProjectSkills`) instead of local helper |
@@ -198,6 +208,15 @@ Residual edge cases found in review (not addressed in this branch):
 - Validation rerun after patch:
   - `npx vitest run test/unit/setup-skills.test.ts test/unit/analyze-skills-notice.test.ts` → **18/18 passing**
   - `npm test` (unit suite) → **862/862 passing**
+
+### Phase 5: Auto-discover skill names (planned)
+
+- Replace hardcoded `SKILL_NAMES` array with `discoverSkillNames()` that reads `gitnexus/skills/` at install time
+- Picks up `gitnexus-pr-review` automatically (previously missed)
+- Discovery: flat `.md` files → strip extension; directories with `SKILL.md` → use dir name; filter to `gitnexus-*` prefix
+- `SKILL_NAMES` export becomes the result of `discoverSkillNames()` (async, called once per `installSkillsTo` invocation)
+- New tests: `discoverSkillNames` discovery logic, prefix filtering, mixed layout handling
+- Existing `installSkillsTo` tests adapt automatically (they reference `SKILL_NAMES.length`)
 
 ### Phase 4: README Update (completed)
 
