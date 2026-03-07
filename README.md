@@ -182,12 +182,13 @@ gitnexus wiki --base-url <url>   # Wiki with custom LLM API base URL
 | `detect_impact` | Pre-commit change analysis — scope, affected processes, risk level       |
 | `generate_map`  | Architecture documentation from the knowledge graph with mermaid diagrams |
 
-**6 agent skills** installed to `~/.claude/skills/` via `gitnexus setup`:
+**7 agent skills** installed to `~/.claude/skills/` via `gitnexus setup` (auto-discovered from disk):
 
 - **Exploring** — Navigate unfamiliar code using the knowledge graph
 - **Debugging** — Trace bugs through call chains
 - **Impact Analysis** — Analyze blast radius before changes
 - **Refactoring** — Plan safe refactors using dependency mapping
+- **PR Review** — Review pull requests using the knowledge graph
 - **Guide** — GitNexus tool reference, graph schema, and workflow guidance
 - **CLI** — Run GitNexus CLI commands (analyze, status, clean, wiki, etc.)
 

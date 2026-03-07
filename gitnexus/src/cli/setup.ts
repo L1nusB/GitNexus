@@ -327,8 +327,9 @@ export async function installSkillsTo(targetDir: string): Promise<string[]> {
         await fs.writeFile(path.join(skillDir, 'SKILL.md'), content, 'utf-8');
         installed.push(skillName);
       }
-    } catch {
-      // Source skill not found — skip
+    } catch (err: any) {
+      if (err?.code === 'ENOENT') continue; // Source skill not found — skip
+      throw err; // Real I/O errors should propagate
     }
   }
 
@@ -467,8 +468,13 @@ export const setupCommand = async () => {
   await installCursorSkills(result);
   await installOpenCodeSkills(result);
 
-  // Clean up stale project-local skills left by previous `analyze` runs
-  await cleanupProjectLocalSkills(result);
+  // Clean up stale project-local skills left by previous `analyze` runs,
+  // but only if at least one global skill install succeeded (don't remove
+  // local skills without replacement).
+  const globalSkillsInstalled = result.configured.some(c => c.includes('skills ('));
+  if (globalSkillsInstalled) {
+    await cleanupProjectLocalSkills(result);
+  }
 
   // Print results
   if (result.configured.length > 0) {
