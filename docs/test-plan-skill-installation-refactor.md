@@ -127,10 +127,10 @@ These test the `discoverSkillNames()` function that replaces the hardcoded `SKIL
 
 The following edge cases were identified in review and are not yet covered by automated tests:
 
-| # | Gap | Why it matters |
-|---|-----|----------------|
-| 25 | Cleanup behavior when no global skill target is installed/configured | Local skills may be removed even if no replacement global install succeeded |
-| 26 | Setup tip visibility in `analyze` after successful indexing | Tip check happens after registry write, so the new MCP+skills tip may never surface in normal success path |
+| # | Gap | Status |
+|---|-----|--------|
+| 25 | Cleanup behavior when no global skill target is installed/configured | **Resolved** — cleanup now guarded by `globalSkillsInstalled` in `setup.ts`; local skills are only removed if a global install succeeded |
+| 26 | Setup tip visibility in `analyze` after successful indexing | Open — tip check happens after registry write, so the MCP+skills tip may never surface in the normal success path (cosmetic) |
 
 ## Execution
 

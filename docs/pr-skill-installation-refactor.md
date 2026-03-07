@@ -193,9 +193,9 @@ Validation rerun in this branch:
 - `npx vitest run test/unit/ai-context.test.ts test/unit/setup-skills.test.ts test/unit/analyze-skills-notice.test.ts` → **25/25 passing**
 - `npm test` (unit suite) → **859/859 passing**
 
-Residual edge cases found in review (not addressed in this branch):
-- The updated `analyze` setup tip is effectively unreachable after successful indexing because `registerRepo()` creates the global registry before the tip check.
-- `setup` cleanup runs regardless of whether any global skill install actually succeeded; on machines with no supported editor directories present, stale local skills could be removed without replacement.
+Residual edge cases found in review:
+- The updated `analyze` setup tip is effectively unreachable after successful indexing because `registerRepo()` creates the global registry before the tip check. (Unchanged — cosmetic, not a correctness issue.)
+- ~~`setup` cleanup runs regardless of whether any global skill install actually succeeded.~~ **Fixed** in review feedback commit: cleanup now guarded by `globalSkillsInstalled` check — only runs if at least one global skill install succeeded.
 
 ### Phase 3b: Follow-up fixes for review findings #1 and #2 (completed)
 
