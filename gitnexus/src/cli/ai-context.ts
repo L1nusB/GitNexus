@@ -31,7 +31,7 @@ export interface AIContextOptions {
 const GITNEXUS_START_MARKER = '<!-- gitnexus:start -->';
 const GITNEXUS_END_MARKER = '<!-- gitnexus:end -->';
 const MANAGED_BLOCK_PATTERN =
-  /^[ \t]*<!-- gitnexus:start -->[\s\S]*?^[ \t]*<!-- gitnexus:end -->[ \t]*\n?/m;
+  /^[ \t]*<!-- gitnexus:start -->[ \t]*\r?\n[\s\S]*?^[ \t]*<!-- gitnexus:end -->[ \t]*(?:\r?\n)?/m;
 
 /**
  * Generate the full GitNexus context content.
@@ -220,6 +220,7 @@ async function installSkills(repoPath: string): Promise<string[]> {
 
   await fs.mkdir(skillsDir, { recursive: true });
   await fs.rm(path.join(skillsDir, 'gitnexus'), { recursive: true, force: true });
+  await fs.rm(path.join(skillsDir, 'generated'), { recursive: true, force: true });
 
   // Skill definitions bundled with the package
   const skills = [
