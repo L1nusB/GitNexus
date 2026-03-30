@@ -72,6 +72,16 @@ export const generateSkillFiles = async (
   const { communityResult, processResult, graph } = pipelineResult;
   const outputDir = path.join(repoPath, '.claude', 'skills');
 
+  // Clear previous generated skill directories while preserving bundled skills.
+  await fs.mkdir(outputDir, { recursive: true });
+  await fs.rm(path.join(outputDir, 'generated'), { recursive: true, force: true });
+  const existingEntries = await fs.readdir(outputDir, { withFileTypes: true });
+  await Promise.all(
+    existingEntries
+      .filter((entry) => entry.isDirectory() && entry.name.startsWith(GENERATED_SKILL_DIR_PREFIX))
+      .map((entry) => fs.rm(path.join(outputDir, entry.name), { recursive: true, force: true })),
+  );
+
   if (!communityResult || !communityResult.memberships.length) {
     console.log('\n  Skills: no communities detected, skipping skill generation');
     return { skills: [], outputPath: outputDir };
@@ -107,16 +117,6 @@ export const generateSkillFiles = async (
   const nodeIdToCommunityLabel = buildNodeCommunityLabelMap(
     communityResult.memberships,
     communities,
-  );
-
-  // Step 4: Clear previous generated skill directories while preserving bundled skills.
-  await fs.mkdir(outputDir, { recursive: true });
-  await fs.rm(path.join(outputDir, 'generated'), { recursive: true, force: true });
-  const existingEntries = await fs.readdir(outputDir, { withFileTypes: true });
-  await Promise.all(
-    existingEntries
-      .filter((entry) => entry.isDirectory() && entry.name.startsWith(GENERATED_SKILL_DIR_PREFIX))
-      .map((entry) => fs.rm(path.join(outputDir, entry.name), { recursive: true, force: true })),
   );
 
   // Step 5: Generate skill files
@@ -180,7 +180,9 @@ export const generateSkillFiles = async (
     );
   }
 
-  console.log(`\n  ${skills.length} skills generated \u2192 .claude/skills/${GENERATED_SKILL_DIR_PREFIX}*/`);
+  console.log(
+    `\n  ${skills.length} skills generated \u2192 .claude/skills/${GENERATED_SKILL_DIR_PREFIX}*/`,
+  );
 
   return { skills, outputPath: outputDir };
 };

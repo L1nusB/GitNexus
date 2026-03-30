@@ -773,6 +773,45 @@ describe('generateSkillFiles — file output', () => {
     expect(secondRunDirs).not.toContain('gitnexus-generated-first');
   });
 
+  it('cleans up previous generated skills when a rerun produces no skills', async () => {
+    const graph1 = createKnowledgeGraph();
+    for (let i = 0; i < 4; i++) {
+      graph1.addNode(
+        makeNode(`fn:x${i}`, `xFunc${i}`, 'Function', `${tmpDir}/src/first/f${i}.ts`, 1, false),
+      );
+    }
+
+    await generateSkillFiles(
+      tmpDir,
+      'TestProject',
+      buildPipelineResult({
+        graph: graph1,
+        repoPath: tmpDir,
+        communities: [makeCommunity('c1', 'First', 4)],
+        memberships: [0, 1, 2, 3].map((i) => makeMembership(`fn:x${i}`, 'c1')),
+      }),
+    );
+
+    const outputDir = path.join(tmpDir, '.claude', 'skills');
+    expect(await fs.readdir(outputDir)).toContain('gitnexus-generated-first');
+
+    const emptyGraph = createKnowledgeGraph();
+    const result = await generateSkillFiles(
+      tmpDir,
+      'TestProject',
+      buildPipelineResult({
+        graph: emptyGraph,
+        repoPath: tmpDir,
+        communities: [],
+        memberships: [],
+      }),
+    );
+
+    expect(result.skills).toEqual([]);
+    const dirsAfterEmptyRun = await fs.readdir(outputDir);
+    expect(dirsAfterEmptyRun).not.toContain('gitnexus-generated-first');
+  });
+
   /**
    * The rendered SKILL.md should contain a stats line matching the
    * community's symbol count, file count, and cohesion percentage.
