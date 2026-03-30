@@ -174,7 +174,7 @@ describe('generateSkillFiles — return values', () => {
     );
 
     expect(result.skills).toEqual([]);
-    expect(result.outputPath).toBe(path.join(tmpDir, '.claude', 'skills', 'generated'));
+    expect(result.outputPath).toBe(path.join(tmpDir, '.claude', 'skills'));
   });
 
   /**
@@ -573,10 +573,10 @@ describe('generateSkillFiles — file output', () => {
   }
 
   /**
-   * Verify that each community produces a directory under generated/
+   * Verify that each community produces a flat Claude skill directory
    * containing a SKILL.md file.
    */
-  it('creates generated/{name}/SKILL.md for each community', async () => {
+  it('creates gitnexus-generated-{name}/SKILL.md for each community', async () => {
     const { graph, communities, memberships } = twoCommSetup();
 
     await generateSkillFiles(
@@ -590,9 +590,15 @@ describe('generateSkillFiles — file output', () => {
       }),
     );
 
-    const outputDir = path.join(tmpDir, '.claude', 'skills', 'generated');
-    const alphaSkill = await fs.readFile(path.join(outputDir, 'alpha', 'SKILL.md'), 'utf-8');
-    const betaSkill = await fs.readFile(path.join(outputDir, 'beta', 'SKILL.md'), 'utf-8');
+    const outputDir = path.join(tmpDir, '.claude', 'skills');
+    const alphaSkill = await fs.readFile(
+      path.join(outputDir, 'gitnexus-generated-alpha', 'SKILL.md'),
+      'utf-8',
+    );
+    const betaSkill = await fs.readFile(
+      path.join(outputDir, 'gitnexus-generated-beta', 'SKILL.md'),
+      'utf-8',
+    );
     expect(alphaSkill.length).toBeGreaterThan(0);
     expect(betaSkill.length).toBeGreaterThan(0);
   });
@@ -616,7 +622,7 @@ describe('generateSkillFiles — file output', () => {
     );
 
     const content = await fs.readFile(
-      path.join(tmpDir, '.claude', 'skills', 'generated', 'alpha', 'SKILL.md'),
+      path.join(tmpDir, '.claude', 'skills', 'gitnexus-generated-alpha', 'SKILL.md'),
       'utf-8',
     );
     expect(content.startsWith('---')).toBe(true);
@@ -669,7 +675,7 @@ describe('generateSkillFiles — file output', () => {
     );
 
     const content = await fs.readFile(
-      path.join(tmpDir, '.claude', 'skills', 'generated', 'alpha', 'SKILL.md'),
+      path.join(tmpDir, '.claude', 'skills', 'gitnexus-generated-alpha', 'SKILL.md'),
       'utf-8',
     );
 
@@ -706,7 +712,7 @@ describe('generateSkillFiles — file output', () => {
     );
 
     const content = await fs.readFile(
-      path.join(tmpDir, '.claude', 'skills', 'generated', 'isolated', 'SKILL.md'),
+      path.join(tmpDir, '.claude', 'skills', 'gitnexus-generated-isolated', 'SKILL.md'),
       'utf-8',
     );
 
@@ -739,9 +745,9 @@ describe('generateSkillFiles — file output', () => {
       }),
     );
 
-    const outputDir = path.join(tmpDir, '.claude', 'skills', 'generated');
+    const outputDir = path.join(tmpDir, '.claude', 'skills');
     const firstRunDirs = await fs.readdir(outputDir);
-    expect(firstRunDirs).toContain('first');
+    expect(firstRunDirs).toContain('gitnexus-generated-first');
 
     // Second run with different community
     const graph2 = createKnowledgeGraph();
@@ -763,8 +769,8 @@ describe('generateSkillFiles — file output', () => {
     );
 
     const secondRunDirs = await fs.readdir(outputDir);
-    expect(secondRunDirs).toContain('second');
-    expect(secondRunDirs).not.toContain('first');
+    expect(secondRunDirs).toContain('gitnexus-generated-second');
+    expect(secondRunDirs).not.toContain('gitnexus-generated-first');
   });
 
   /**
@@ -794,7 +800,7 @@ describe('generateSkillFiles — file output', () => {
     );
 
     const content = await fs.readFile(
-      path.join(tmpDir, '.claude', 'skills', 'generated', 'stats', 'SKILL.md'),
+      path.join(tmpDir, '.claude', 'skills', 'gitnexus-generated-stats', 'SKILL.md'),
       'utf-8',
     );
 
@@ -902,7 +908,7 @@ describe('generateSkillFiles — file output', () => {
     expect(result.skills).toHaveLength(1);
 
     const content = await fs.readFile(
-      path.join(tmpDir, '.claude', 'skills', 'generated', 'win', 'SKILL.md'),
+      path.join(tmpDir, '.claude', 'skills', 'gitnexus-generated-win', 'SKILL.md'),
       'utf-8',
     );
 
