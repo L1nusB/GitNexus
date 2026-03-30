@@ -80,7 +80,7 @@ function createFixtureRepo(prefix: string, files: Record<string, string>): strin
  * Assert standard skill file properties:
  * 1. CLI exits 0
  * 2. .gitnexus/ exists
- * 3. >= minSkills SKILL.md files under .claude/skills/gitnexus-generated-*/
+ * 3. >= minSkills SKILL.md files under flat .claude/skills/gitnexus-generated-* directories
  * 4. YAML frontmatter valid
  * 5. ## Key Files section present
  * 6. ## How to Explore section present
@@ -155,9 +155,7 @@ function assertContextFiles(result: ReturnType<typeof runSkillsCli>, tmpDir: str
   const skillsRoot = path.join(tmpDir, '.claude', 'skills');
   const skillsGenerated =
     fs.existsSync(skillsRoot) &&
-    fs
-      .readdirSync(skillsRoot)
-      .some((entry) => entry.startsWith('gitnexus-generated-'));
+    fs.readdirSync(skillsRoot).some((entry) => entry.startsWith('gitnexus-generated-'));
 
   const claudePath = path.join(tmpDir, 'CLAUDE.md');
   expect(fs.existsSync(claudePath)).toBe(true);
@@ -2414,7 +2412,9 @@ export function createEntry(level: string, msg: string) {
     const skillDirs = fs
       .readdirSync(skillsRoot)
       .filter(
-        (d) => d.startsWith('gitnexus-generated-') && fs.statSync(path.join(skillsRoot, d)).isDirectory(),
+        (d) =>
+          d.startsWith('gitnexus-generated-') &&
+          fs.statSync(path.join(skillsRoot, d)).isDirectory(),
       );
     expect(skillDirs.length).toBeGreaterThanOrEqual(1);
 

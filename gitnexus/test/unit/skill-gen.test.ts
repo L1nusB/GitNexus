@@ -841,8 +841,7 @@ describe('generateSkillFiles — file output', () => {
       tmpDir,
       '.claude',
       'skills',
-      'generated',
-      result.skills[0].name,
+      `gitnexus-generated-${result.skills[0].name}`,
       'SKILL.md',
     );
     const content = await fs.readFile(skillPath, 'utf-8');
